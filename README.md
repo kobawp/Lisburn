@@ -4,7 +4,7 @@
 
 # Lisburn App
 
-A mobile-friendly web application for remembering recurring tasks! 
+A mobile-friendly web application for remembering reocurring tasks! 
 
 | <img width="200" style="border-radius: 16px;" alt="IMG_1841" src="https://github.com/user-attachments/assets/cc018c9e-93ba-479c-ad1e-1d553e5d0914" /> | <img width="200" style="border-radius: 16px;" alt="IMG_1844" src="https://github.com/user-attachments/assets/67d47294-96b7-4908-9747-b94fdf7aaddc" /> | <img width="200" style="border-radius: 16px;" alt="IMG_1842" src="https://github.com/user-attachments/assets/08f6f85d-32ab-4435-b660-1a484f1d05d4" /> |
 | :---: | :---: | :---: |
