@@ -18,13 +18,15 @@ jobs:
           node-version: '22'
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install -g @capacitor/cli
 
       - name: Build Web App
         run: npm run build
 
       - name: Sync Capacitor iOS
-        run: npx cap sync ios
+        run: cap sync ios
 
       - name: Build Unsigned IPA
         run: |
