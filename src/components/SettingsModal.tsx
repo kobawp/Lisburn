@@ -25,7 +25,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resetState, setResetState] = useState<'idle' | 'confirm1' | 'confirm2' | 'done'>('idle');
-  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
+  const { containerRef } = useOverscrollBounce<HTMLDivElement>();
 
   const handleExportJSON = async () => {
     const filename = `days-since-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -95,7 +95,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         ref={containerRef}
         className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar touch-pan-y"
         onClick={(e) => e.stopPropagation()}
-        {...touchHandlers}
       >
         <div className="px-4 sm:px-6 pt-[54px] pb-24 space-y-8">
           

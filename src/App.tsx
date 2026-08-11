@@ -17,7 +17,8 @@ import { AddTaskModal } from './components/AddTaskModal';
 import { EditTaskModal } from './components/EditTaskModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { SettingsModal } from './components/SettingsModal';
-import { ArrowUpDown, Search, Clock, Plus, Settings, X, RefreshCw } from 'lucide-react';
+import { ArrowUpDown, Search, Clock, Plus, Settings, X } from 'lucide-react';
+import { useOverscrollBounce } from './hooks/useOverscrollBounce';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasksFromStorage());
@@ -28,70 +29,7 @@ export default function App() {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
-  // Ultra-smooth GPU-accelerated Pull to refresh
-  const pullIndicatorRef = useRef<HTMLDivElement>(null);
-  const startYRef = useRef<number | null>(null);
-  const currentPullRef = useRef<number>(0);
-  const [isReadyToRefresh, setIsReadyToRefresh] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY <= 1 && !isRefreshing) {
-      startYRef.current = e.touches[0].clientY;
-      currentPullRef.current = 0;
-    } else {
-      startYRef.current = null;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (startYRef.current === null || isRefreshing) return;
-    const y = e.touches[0].clientY;
-    const diff = y - startYRef.current;
-
-    if (diff > 0 && window.scrollY <= 1) {
-      const damped = Math.min(Math.pow(diff, 0.82), 85);
-      currentPullRef.current = damped;
-
-      if (pullIndicatorRef.current) {
-        pullIndicatorRef.current.style.height = `${damped}px`;
-        pullIndicatorRef.current.style.opacity = `${Math.min(damped / 50, 1)}`;
-        pullIndicatorRef.current.style.transition = 'none';
-      }
-
-      if (damped > 60 && !isReadyToRefresh) {
-        setIsReadyToRefresh(true);
-      } else if (damped <= 60 && isReadyToRefresh) {
-        setIsReadyToRefresh(false);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (startYRef.current === null || isRefreshing) return;
-    const pulled = currentPullRef.current;
-    startYRef.current = null;
-
-    if (pulled > 60) {
-      setIsRefreshing(true);
-      if (pullIndicatorRef.current) {
-        pullIndicatorRef.current.style.transition = 'height 0.25s ease-out, opacity 0.25s ease-out';
-        pullIndicatorRef.current.style.height = '60px';
-        pullIndicatorRef.current.style.opacity = '1';
-      }
-      setTimeout(() => {
-        window.location.reload();
-      }, 400);
-    } else {
-      setIsReadyToRefresh(false);
-      if (pullIndicatorRef.current) {
-        pullIndicatorRef.current.style.transition = 'height 0.25s ease-out, opacity 0.25s ease-out';
-        pullIndicatorRef.current.style.height = '0px';
-        pullIndicatorRef.current.style.opacity = '0';
-      }
-    }
-    currentPullRef.current = 0;
-  };
+  const { containerRef: mainRef } = useOverscrollBounce<HTMLDivElement>();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -262,24 +200,12 @@ export default function App() {
   return (
     <div 
       className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
-      
-      {/* Pull to refresh indicator */}
-      <div 
-        ref={pullIndicatorRef}
-        className="w-full flex justify-center items-end overflow-hidden h-0 opacity-0 will-change-[height,opacity]"
-      >
-        <div className="text-[#777777] text-sm mb-3 flex flex-col items-center gap-1.5 select-none">
-          <RefreshCw className={`w-5 h-5 transition-transform ${isReadyToRefresh || isRefreshing ? 'animate-spin text-white' : ''}`} />
-          <span>{isRefreshing ? 'Refreshing...' : isReadyToRefresh ? 'Release to refresh' : 'Pull to refresh'}</span>
-        </div>
-      </div>
-
       {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-[54px] pb-12 flex flex-col">
+      <main 
+        ref={mainRef}
+        className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-[54px] pb-12 flex flex-col"
+      >
         
         {/* Header Icons */}
         <div className="flex items-center justify-between">

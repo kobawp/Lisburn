@@ -33,7 +33,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [reminderUnit, setReminderUnit] = useState<'days' | 'weeks' | 'months'>('weeks');
   const [reminderAfter, setReminderAfter] = useState<number>(1);
 
-  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
+  const { containerRef } = useOverscrollBounce<HTMLDivElement>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +83,6 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
       className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
       ref={containerRef}
-      {...touchHandlers}
     >
       <div 
         className="w-full max-w-5xl mx-auto flex-1 flex flex-col"

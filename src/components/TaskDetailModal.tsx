@@ -27,7 +27,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const [isPromptingNote, setIsPromptingNote] = useState(false);
   const [noteInput, setNoteInput] = useState('');
-  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
+  const { containerRef } = useOverscrollBounce<HTMLDivElement>();
   
 
 
@@ -95,7 +95,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
       className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
       ref={containerRef}
-      {...touchHandlers}
     >
       <div 
         className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative"
