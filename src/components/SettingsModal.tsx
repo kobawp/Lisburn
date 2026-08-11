@@ -88,12 +88,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A]">
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-hidden">
       
       {/* Scrollable Container */}
       <div 
         ref={containerRef}
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar touch-pan-y"
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 pt-[54px] pb-24 space-y-8">

@@ -199,7 +199,7 @@ export default function App() {
 
   return (
     <div 
-      className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200"
+      className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200 overflow-hidden"
     >
       {/* Main Content Area */}
       <main 
@@ -226,11 +226,35 @@ export default function App() {
                 <ArrowUpDown className="w-6 h-6" />
               </button>
               {isSortMenuOpen && (
-                <div className="absolute left-0 mt-2 w-40 bg-[#130F14] border border-[#2D2A26] rounded-xl shadow-lg z-50 py-1">
-                  <button onClick={() => handleSortChange('latest')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Latest</button>
-                  <button onClick={() => handleSortChange('earliest')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Earliest</button>
-                  <button onClick={() => handleSortChange('name')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Name</button>
-                  <button onClick={() => handleSortChange('custom')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Custom Order</button>
+                <div className="absolute left-0 mt-2 w-44 bg-[#130F14] border border-[#2D2A26] rounded-xl shadow-lg z-50 py-1">
+                  <button 
+                    onClick={() => handleSortChange('latest')} 
+                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                  >
+                    <span>Latest</span>
+                    {currentSort === 'latest' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                  </button>
+                  <button 
+                    onClick={() => handleSortChange('earliest')} 
+                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                  >
+                    <span>Earliest</span>
+                    {currentSort === 'earliest' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                  </button>
+                  <button 
+                    onClick={() => handleSortChange('name')} 
+                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                  >
+                    <span>Name</span>
+                    {currentSort === 'name' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                  </button>
+                  <button 
+                    onClick={() => handleSortChange('custom')} 
+                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                  >
+                    <span>Custom Order</span>
+                    {currentSort === 'custom' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                  </button>
                 </div>
               )}
             </div>

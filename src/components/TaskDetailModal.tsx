@@ -97,7 +97,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     >
       <div 
         ref={containerRef}
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative overflow-y-auto no-scrollbar touch-pan-y"
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-end w-full">
