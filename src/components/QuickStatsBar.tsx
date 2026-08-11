@@ -157,11 +157,10 @@ export const QuickStatsBar: React.FC<QuickStatsBarProps> = ({
               id="sort-select"
               className="w-full bg-white border border-[#E8E4DE] rounded-xl px-3 py-2 text-xs text-[#4A443F] font-semibold focus:outline-none focus:border-[#AB70D5] cursor-pointer shadow-2xs"
             >
-              <option value="days-desc">Most Days Ago</option>
-              <option value="days-asc">Least Days Ago</option>
-              <option value="status">Status (Overdue First)</option>
-              <option value="title">Alphabetical (A-Z)</option>
-              <option value="recently-reset">Recently Reset</option>
+              <option value="latest">Latest</option>
+              <option value="earliest">Earliest</option>
+              <option value="name">Name</option>
+              <option value="custom">Custom Order</option>
             </select>
           </div>
         </div>

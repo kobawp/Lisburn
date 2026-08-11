@@ -93,15 +93,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
       className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto">
       <div 
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-12 pb-24 px-6 relative"
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 text-[#777777] hover:text-white transition-colors focus:outline-none"
-        >
-          <X className="w-8 h-8 stroke-[3]" />
-        </button>
+        <div className="flex items-center justify-end w-full">
+          <button
+            onClick={onClose}
+            className="p-2 -mr-2 text-[#777777] hover:text-white transition-colors focus:outline-none"
+          >
+            <X className="w-8 h-8 stroke-[3]" />
+          </button>
+        </div>
         
         {/* Top Icon & Title */}
         <div className="flex flex-col items-center mt-8 mb-8 space-y-4">
@@ -213,7 +215,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="absolute bottom-8 left-6 right-6 flex items-center justify-between">
+        <div className="absolute bottom-[52px] left-6 right-6 flex items-center justify-between">
           <button
             onClick={() => {
               onClose();

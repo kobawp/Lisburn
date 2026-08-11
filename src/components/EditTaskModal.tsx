@@ -109,7 +109,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       >
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 pt-16 pb-8 border-[#130F14] bg-transparent">
+          <div className="flex items-center justify-between px-4 sm:px-6 pt-[54px] pb-8 border-[#130F14] bg-transparent">
             <h2 className="text-[2.5rem] leading-none tracking-tight font-bold text-white">Edit</h2>
             <div className="flex items-center gap-1">
               <button

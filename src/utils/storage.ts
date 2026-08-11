@@ -5,7 +5,7 @@ const TASKS_STORAGE_KEY = 'days_since_tracker_tasks_v1';
 const SETTINGS_STORAGE_KEY = 'days_since_tracker_settings_v1';
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  sortBy: 'days-desc',
+  sortBy: 'custom',
   soundEnabled: true,
   allowNotifications: true,
   quietHoursEnabled: false,

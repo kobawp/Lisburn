@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Calendar, Bell, Smile, Plus, Minus, Check, X } from 'lucide-react';
 import { Task, TaskColor } from '../types';
@@ -32,7 +32,27 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [reminderUnit, setReminderUnit] = useState<'days' | 'weeks' | 'months'>('weeks');
   const [reminderAfter, setReminderAfter] = useState<number>(1);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [startY, setStartY] = useState<number | null>(null);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (scrollRef.current && scrollRef.current.scrollTop === 0) {
+      setStartY(e.touches[0].clientY);
+    } else {
+      setStartY(null);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (startY !== null) {
+      const currentY = e.changedTouches[0].clientY;
+      const diff = currentY - startY;
+      if (diff > 100) {
+        onClose();
+      }
+      setStartY(null);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,12 +102,15 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
       className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto">
       <div 
+        ref={scrollRef}
         className="w-full max-w-5xl mx-auto flex-1 flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 pt-16 pb-8 border-[#130F14] bg-transparent">
+          <div className="flex items-center justify-between px-4 sm:px-6 pt-[54px] pb-8 border-[#130F14] bg-transparent">
             <h2 className="text-[2.5rem] leading-none tracking-tight font-bold text-white">Add Task</h2>
             <div className="flex items-center gap-1">
               <button

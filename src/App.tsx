@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Reorder, AnimatePresence } from 'motion/react';
 import { 
   Task, 
@@ -17,7 +17,7 @@ import { AddTaskModal } from './components/AddTaskModal';
 import { EditTaskModal } from './components/EditTaskModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { SettingsModal } from './components/SettingsModal';
-import { ArrowUpDown, Search, Clock, Plus, Settings, X } from 'lucide-react';
+import { ArrowUpDown, Search, Clock, Plus, Settings, X, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasksFromStorage());
@@ -26,9 +26,59 @@ export default function App() {
   // Search & Sort state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  // Pull to refresh state
+  const [pullDistance, setPullDistance] = useState(0);
+  const startYRef = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY <= 0) {
+      startYRef.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startYRef.current !== null) {
+      const y = e.touches[0].clientY;
+      const diff = y - startYRef.current;
+      if (diff > 0) {
+        setPullDistance(Math.min(diff * 0.4, 80));
+      } else {
+        setPullDistance(0);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 60) {
+      window.location.reload();
+    }
+    setPullDistance(0);
+    startYRef.current = null;
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setIsSortMenuOpen(false);
+      }
+    };
+
+    if (isSortMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSortMenuOpen]);
   const currentSort = settings.sortBy || 'custom';
 
   const handleSortChange = (newSort: SortOption) => {
+    // Autosave current order before switching
+    if (!searchQuery.trim()) {
+      setTasks(filteredTasks);
+    }
     setSettings((s) => ({ ...s, sortBy: newSort }));
     setIsSortMenuOpen(false);
   };
@@ -175,10 +225,26 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200">
+    <div 
+      className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       
+      {/* Pull to refresh indicator */}
+      <div 
+        className="w-full flex justify-center items-end overflow-hidden transition-all duration-200"
+        style={{ height: pullDistance, opacity: pullDistance / 60 }}
+      >
+        <div className="text-[#777777] text-sm mb-4 flex flex-col items-center gap-2">
+          <RefreshCw className={`w-5 h-5 ${pullDistance > 60 ? 'animate-spin text-white' : ''}`} />
+          {pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}
+        </div>
+      </div>
+
       {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 pb-12 flex flex-col">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-[54px] pb-12 flex flex-col">
         
         {/* Header Icons */}
         <div className="flex items-center justify-between">
@@ -190,7 +256,7 @@ export default function App() {
             >
               <Settings className="w-6 h-6" />
             </button>
-            <div className="relative">
+            <div className="relative" ref={sortMenuRef}>
               <button
                 onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
                 className="p-2 text-white hover:text-[#777777] transition-colors focus:outline-none"
@@ -200,11 +266,10 @@ export default function App() {
               </button>
               {isSortMenuOpen && (
                 <div className="absolute left-0 mt-2 w-40 bg-[#130F14] border border-[#2D2A26] rounded-xl shadow-lg z-50 py-1">
-                  <button onClick={() => handleSortChange('days-desc')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Most Days Ago</button>
-                  <button onClick={() => handleSortChange('days-asc')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Least Days Ago</button>
-                  <button onClick={() => handleSortChange('status')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Status</button>
-                  <button onClick={() => handleSortChange('title')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Alphabetical</button>
-                  <button onClick={() => handleSortChange('recently-reset')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Recently Reset</button>
+                  <button onClick={() => handleSortChange('latest')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Latest</button>
+                  <button onClick={() => handleSortChange('earliest')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Earliest</button>
+                  <button onClick={() => handleSortChange('name')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Name</button>
+                  <button onClick={() => handleSortChange('custom')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Custom Order</button>
                 </div>
               )}
             </div>

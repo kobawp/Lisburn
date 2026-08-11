@@ -24,7 +24,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resetState, setResetState] = useState<'idle' | 'confirm1' | 'confirm2' | 'done'>('idle');
+  const [startY, setStartY] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (scrollRef.current && scrollRef.current.scrollTop === 0) {
+      setStartY(e.touches[0].clientY);
+    } else {
+      setStartY(null);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (startY !== null) {
+      const currentY = e.changedTouches[0].clientY;
+      const diff = currentY - startY;
+      if (diff > 100) {
+        onClose();
+      }
+      setStartY(null);
+    }
+  };
 
 
   const handleExportJSON = () => {
@@ -68,10 +88,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       
       {/* Scrollable Container */}
       <div 
+        ref={scrollRef}
         className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        <div className="px-4 sm:px-6 pt-16 pb-24 space-y-8">
+        <div className="px-4 sm:px-6 pt-[54px] pb-24 space-y-8">
           
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-[2.5rem] leading-none tracking-tight font-bold text-white">Settings</h2>
