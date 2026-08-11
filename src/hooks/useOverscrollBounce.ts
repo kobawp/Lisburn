@@ -5,7 +5,7 @@ interface UseOverscrollBounceOptions {
 }
 
 export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
-  maxPull = 100,
+  maxPull = 90,
 }: UseOverscrollBounceOptions = {}) {
   const containerRef = useRef<T | null>(null);
 
@@ -13,57 +13,89 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
     const el = containerRef.current;
     if (!el) return;
 
-    let startY: number | null = null;
+    let anchorY: number | null = null;
+    let mode: 'top' | 'bottom' | null = null;
     let isPulling = false;
 
     const onTouchStart = (e: TouchEvent) => {
-      if (el.scrollTop <= 0) {
-        startY = e.touches[0].clientY;
-        isPulling = false;
-      } else {
-        startY = null;
-      }
+      anchorY = e.touches[0].clientY;
+      mode = null;
+      isPulling = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (startY === null) return;
+      if (anchorY === null) return;
 
       const currentY = e.touches[0].clientY;
-      const diff = currentY - startY;
+      const diff = currentY - anchorY;
 
-      // Only handle downward pull when at the very top of scroll
-      if (diff > 0 && el.scrollTop <= 0) {
-        if (e.cancelable) {
-          e.preventDefault();
+      // Determine current scroll position
+      const scrollTop = el.scrollTop > 0 ? el.scrollTop : window.scrollY;
+      const scrollHeight = Math.max(el.scrollHeight, document.documentElement.scrollHeight);
+      const clientHeight = el.clientHeight || window.innerHeight;
+
+      const isAtTop = scrollTop <= 1;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 3;
+
+      if (!isPulling) {
+        if (isAtTop && diff > 0) {
+          mode = 'top';
+          anchorY = currentY;
+          isPulling = true;
+        } else if (isAtBottom && diff < 0) {
+          mode = 'bottom';
+          anchorY = currentY;
+          isPulling = true;
         }
-        e.stopPropagation();
+      }
 
-        isPulling = true;
-        // Dampened rubberband resistance formula
-        const damped = Math.min(Math.pow(diff, 0.72) * 1.5, maxPull);
+      if (isPulling && mode) {
+        const pullDiff = currentY - anchorY;
 
-        el.style.transform = `translateY(${damped}px)`;
-        el.style.transition = 'none';
-      } else if (isPulling) {
-        el.style.transform = 'translateY(0px)';
-        el.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
-        isPulling = false;
+        if (mode === 'top') {
+          if (pullDiff > 0) {
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
+
+            const damped = Math.min(Math.pow(pullDiff, 0.72) * 1.1, maxPull);
+            el.style.transform = `translateY(${damped}px)`;
+            el.style.transition = 'none';
+          } else {
+            isPulling = false;
+            mode = null;
+            el.style.transform = 'translateY(0px)';
+          }
+        } else if (mode === 'bottom') {
+          if (pullDiff < 0) {
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
+
+            const damped = -1 * Math.min(Math.pow(Math.abs(pullDiff), 0.72) * 1.1, maxPull);
+            el.style.transform = `translateY(${damped}px)`;
+            el.style.transition = 'none';
+          } else {
+            isPulling = false;
+            mode = null;
+            el.style.transform = `translateY(0px)`;
+          }
+        }
       }
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (startY === null) return;
-      startY = null;
+      anchorY = null;
 
       if (isPulling) {
         isPulling = false;
+        mode = null;
+
         if (e.cancelable) {
           e.preventDefault();
         }
         e.stopPropagation();
 
-        // Elastic spring snap-back animation
-        el.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
+        // Smooth spring snapback
+        el.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.15)';
         el.style.transform = 'translateY(0px)';
 
         setTimeout(() => {
@@ -71,7 +103,7 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
             el.style.transform = '';
             el.style.transition = '';
           }
-        }, 400);
+        }, 380);
       }
     };
 
@@ -90,6 +122,5 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
 
   return {
     containerRef,
-    touchHandlers: {},
   };
 }

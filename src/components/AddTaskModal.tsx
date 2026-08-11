@@ -81,11 +81,11 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
-      ref={containerRef}
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-hidden"
     >
       <div 
-        className="w-full max-w-5xl mx-auto flex-1 flex flex-col"
+        ref={containerRef}
+        className="w-full max-w-5xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col">

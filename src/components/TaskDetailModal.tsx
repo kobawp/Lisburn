@@ -93,11 +93,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
-      ref={containerRef}
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-hidden"
     >
       <div 
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative"
+        ref={containerRef}
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative overflow-y-auto no-scrollbar touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-end w-full">
