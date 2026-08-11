@@ -28,11 +28,9 @@ jobs:
 
       - name: Add iOS Platform
         run: |
-          npx cap add ios || true
+          rm -rf ios
+          npx cap add ios
           npx cap sync ios
-          # Workaround for SPM empty target error if git ignored CapApp-SPM
-          mkdir -p ios/App/CapApp-SPM/Sources/CapApp-SPM
-          echo 'public let isCapacitorApp = true' > ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift
 
       - name: Build Unsigned IPA
         run: |
