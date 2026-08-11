@@ -303,7 +303,7 @@ export default function App() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search"
-            className="w-full pl-12 pr-10 py-2.5 bg-[#130F14] rounded-full text-[14px] text-[#2D2A26] text-zinc-100 placeholder-[#777777] focus:outline-none transition-colors"
+            className="w-full pl-12 pr-10 py-2.5 bg-[#130F14] rounded-full text-[16px] text-[#2D2A26] text-zinc-100 placeholder-[#777777] focus:outline-none transition-colors"
           />
           {searchQuery && (
             <button
