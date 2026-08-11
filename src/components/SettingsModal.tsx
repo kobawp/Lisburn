@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Check } from 'lucide-react';
 import { AppSettings, Task } from '../types';
+import { useOverscrollBounce } from '../hooks/useOverscrollBounce';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -24,37 +25,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resetState, setResetState] = useState<'idle' | 'confirm1' | 'confirm2' | 'done'>('idle');
-  const [startY, setStartY] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (scrollRef.current && scrollRef.current.scrollTop === 0) {
-      setStartY(e.touches[0].clientY);
-    } else {
-      setStartY(null);
-    }
-  };
+  const handleExportJSON = async () => {
+    const filename = `days-since-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const jsonStr = JSON.stringify(tasks, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (startY !== null) {
-      const currentY = e.changedTouches[0].clientY;
-      const diff = currentY - startY;
-      if (diff > 100) {
-        onClose();
+    // Try Web Share API first for native iOS "Save to Files"
+    if (navigator.canShare) {
+      try {
+        const file = new File([blob], filename, { type: 'application/json' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Days Since Backup',
+          });
+          return;
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
       }
-      setStartY(null);
     }
-  };
 
-
-  const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
+    // Fallback: Blob URL download anchor
+    const url = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `days-since-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.href = url;
+    downloadAnchor.download = filename;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
-    downloadAnchor.remove();
+    setTimeout(() => {
+      downloadAnchor.remove();
+      URL.revokeObjectURL(url);
+    }, 1000);
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,11 +92,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       
       {/* Scrollable Container */}
       <div 
-        ref={scrollRef}
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar"
+        ref={containerRef}
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar touch-pan-y"
         onClick={(e) => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        {...touchHandlers}
       >
         <div className="px-4 sm:px-6 pt-[54px] pb-24 space-y-8">
           

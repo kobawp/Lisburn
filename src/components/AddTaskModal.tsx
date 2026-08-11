@@ -4,6 +4,7 @@ import { Calendar, Bell, Smile, Plus, Minus, Check, X } from 'lucide-react';
 import { Task, TaskColor } from '../types';
 import { POPULAR_EMOJIS } from './TaskIcon';
 import { EmojiSelector } from './EmojiSelector';
+import { useOverscrollBounce } from '../hooks/useOverscrollBounce';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -32,27 +33,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [reminderUnit, setReminderUnit] = useState<'days' | 'weeks' | 'months'>('weeks');
   const [reminderAfter, setReminderAfter] = useState<number>(1);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [startY, setStartY] = useState<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (scrollRef.current && scrollRef.current.scrollTop === 0) {
-      setStartY(e.touches[0].clientY);
-    } else {
-      setStartY(null);
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (startY !== null) {
-      const currentY = e.changedTouches[0].clientY;
-      const diff = currentY - startY;
-      if (diff > 100) {
-        onClose();
-      }
-      setStartY(null);
-    }
-  };
+  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,13 +81,13 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto">
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
+      ref={containerRef}
+      {...touchHandlers}
+    >
       <div 
-        ref={scrollRef}
         className="w-full max-w-5xl mx-auto flex-1 flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
       >
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
           {/* Header */}
@@ -246,19 +227,15 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
               {/* Opened options when switch is ON */}
               {enableReminder && (
-                <div className="space-y-4 pt-2 bg-[#130F14] p-4 rounded-2xl border border-[#130F14]">
-                  {/* Order: Unit first */}
+                <div className="space-y-3 bg-[#130F14] p-3 rounded-2xl border border-[#130F14]">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#7A746D] text-zinc-400 mb-2">
-                      Unit
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 gap-2 w-full">
                       {(['days', 'weeks', 'months'] as const).map((unit) => (
                         <button
                           key={unit}
                           type="button"
                           onClick={() => setReminderUnit(unit)}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all ${
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all w-full ${
                             reminderUnit === unit
                               ? 'bg-[#AB70D5] border-[#AB70D5] text-white shadow-2xs'
                               : 'bg-[#09050A] border-[#130F14] text-[#7A746D] text-zinc-300 hover:bg-[#1C151E]'
@@ -271,7 +248,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                   </div>
 
                   {/* Order: After second (with + and - buttons) */}
-                  <div className="flex items-center justify-between border-[#130F14] pt-3">
+                  <div className="flex items-center justify-between border-t border-[#1C151E] pt-2.5">
                     <label className="text-[11px] font-bold text-[#7A746D] text-zinc-400">
                       After
                     </label>

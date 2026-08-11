@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Task } from '../types';
 import { TaskIcon } from './TaskIcon';
@@ -16,30 +16,10 @@ export const TaskCompactRow: React.FC<TaskCompactRowProps> = ({
   const shortTime = formatShortTimeSince(task.lastCompletedAt);
   const hasNoDate = task.lastCompletedAt === null;
 
-  const [pointerDownPos, setPointerDownPos] = useState<{ x: number; y: number } | null>(null);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setPointerDownPos({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (pointerDownPos) {
-      const dx = e.clientX - pointerDownPos.x;
-      const dy = e.clientY - pointerDownPos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance > 5) {
-        // Ignored, was a drag
-        return;
-      }
-    }
-    onClickTask(task);
-  };
-
   return (
     <div 
-      onPointerDown={handlePointerDown}
-      onClick={handleClick}
-      className="py-1.5 flex items-center justify-between gap-3 transition-transform active:scale-95 cursor-pointer group"
+      onClick={() => onClickTask(task)}
+      className="py-1.5 flex items-center justify-between gap-3 cursor-pointer group select-none active:opacity-70 transition-opacity"
     >
       {/* Icon + Title */}
       <div className="flex items-center gap-4 min-w-0 flex-1">

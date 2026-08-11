@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { Task } from '../types';
 import { TaskIcon } from './TaskIcon';
 import { getTimeBreakdown } from '../utils/timeUtils';
+import { useOverscrollBounce } from '../hooks/useOverscrollBounce';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -26,6 +27,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const [isPromptingNote, setIsPromptingNote] = useState(false);
   const [noteInput, setNoteInput] = useState('');
+  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
   
 
 
@@ -91,7 +93,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto">
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
+      ref={containerRef}
+      {...touchHandlers}
+    >
       <div 
         className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative"
         onClick={(e) => e.stopPropagation()}
@@ -106,21 +111,21 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         </div>
         
         {/* Top Icon & Title */}
-        <div className="flex flex-col items-center mt-8 mb-8 space-y-4">
+        <div className="flex flex-col items-center mt-3 mb-4 space-y-2">
           <div className="w-14 h-14 rounded-[16px] bg-[#130F14] flex items-center justify-center text-3xl">
             <TaskIcon name={task.icon} className="w-7 h-7 text-[#AB70D5]" />
           </div>
-          <h1 className="text-[2.5rem] leading-none tracking-tight font-bold text-white text-center">
+          <h1 className="text-[2.25rem] leading-none tracking-tight font-bold text-white text-center">
             {task.title}
           </h1>
         </div>
 
         {/* Mark Done Button / Prompt */}
-        <div className="mb-10 w-full max-w-md mx-auto">
+        <div className="mb-5 w-full max-w-md mx-auto">
           {!isPromptingNote ? (
             <button
               onClick={() => setIsPromptingNote(true)}
-              className="w-full py-4 px-6 rounded-full font-bold text-lg text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors shadow-lg"
+              className="w-full py-3.5 px-6 rounded-full font-bold text-base text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors shadow-lg"
             >
               Mark done today?
             </button>
@@ -132,19 +137,19 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 placeholder="Add a note (optional)..."
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
-                className="w-full px-5 py-4 bg-[#130F14] rounded-[24px] text-white focus:outline-none border border-[#d7ae4c]/30 focus:border-[#d7ae4c]"
+                className="w-full px-5 py-3.5 bg-[#130F14] rounded-[24px] text-white focus:outline-none border border-[#d7ae4c]/30 focus:border-[#d7ae4c]"
               />
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setIsPromptingNote(false)}
-                  className="flex-1 py-3 px-6 rounded-full font-bold text-white bg-[#1C151E] hover:bg-[#261C29] transition-colors"
+                  className="flex-1 py-2.5 px-6 rounded-full font-bold text-white bg-[#1C151E] hover:bg-[#261C29] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 px-6 rounded-full font-bold text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors"
+                  className="flex-1 py-2.5 px-6 rounded-full font-bold text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors"
                 >
                   Save
                 </button>
@@ -154,7 +159,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         </div>
 
         {/* Details Section */}
-        <div className="w-full space-y-8">
+        <div className="w-full space-y-4">
           
           {/* Notes */}
           {task.description && (
@@ -192,14 +197,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           {/* History */}
           <div>
             <h3 className="text-[14px] font-bold text-[#777777] mb-2 px-1 border-b border-[#261C29] pb-2">History</h3>
-            <div className="pt-2 space-y-2 px-1">
+            <div 
+              className="pt-2 space-y-3 px-1"
+              style={{
+                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 100%)',
+                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 100%)'
+              }}
+            >
               {sortedHistory.length === 0 ? (
                 <p className="text-[14px] text-[#777777] italic">No history entries yet.</p>
               ) : (
                 sortedHistory.map((entry) => (
                   <div key={entry.id} className="flex items-start justify-between gap-4 text-[14px]">
                     <div className="font-bold text-[#d7ae4c] shrink-0">
-                      * {formatLongDate(entry.timestamp)}
+                      • {formatLongDate(entry.timestamp)}
                     </div>
                     {entry.note && (
                       <div className="text-[#d7ae4c] font-normal text-right break-words">
@@ -215,13 +226,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="absolute bottom-[52px] left-6 right-6 flex items-center justify-between">
+        <div className="mt-14 mb-10 flex items-center justify-between px-2 pt-6 border-t border-[#1C151E]">
           <button
             onClick={() => {
               onClose();
               onEdit(task);
             }}
-            className="text-[14px] font-normal text-white hover:text-gray-300 transition-colors px-2"
+            className="text-[14px] font-bold text-white hover:text-gray-300 transition-colors px-2 py-1"
           >
             Edit
           </button>
@@ -232,7 +243,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 onClose();
               }
             }}
-            className="text-[14px] font-normal text-[#B91C1C] hover:text-[#9F1818] transition-colors px-2"
+            className="text-[14px] font-bold text-[#B91C1C] hover:text-[#9F1818] transition-colors px-2 py-1"
           >
             Delete Task
           </button>

@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Check, X, Calendar, Bell, Smile, Plus, Minus } from 'lucide-react';
 import { Task } from '../types';
 import { EmojiSelector } from './EmojiSelector';
+import { useOverscrollBounce } from '../hooks/useOverscrollBounce';
 
 interface EditTaskModalProps {
   task: Task | null;
@@ -17,7 +18,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onClose,
   onSave
 }) => {
-
+  const { containerRef, touchHandlers } = useOverscrollBounce<HTMLDivElement>();
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
@@ -102,7 +103,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto">
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto touch-pan-y"
+      ref={containerRef}
+      {...touchHandlers}
+    >
       <div 
         className="w-full max-w-5xl mx-auto flex-1 flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -238,19 +242,15 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               </div>
 
               {enableReminder && (
-                <div className="space-y-4 pt-2 bg-[#130F14] p-4 rounded-2xl border border-[#130F14]">
-                  {/* Order: Unit first */}
+                <div className="space-y-3 bg-[#130F14] p-3 rounded-2xl border border-[#130F14]">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#7A746D] text-zinc-400 mb-2">
-                      Unit
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 gap-2 w-full">
                       {(['days', 'weeks', 'months'] as const).map((unit) => (
                         <button
                           key={unit}
                           type="button"
                           onClick={() => setReminderUnit(unit)}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all ${
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border text-center transition-all w-full ${
                             reminderUnit === unit
                               ? 'bg-[#AB70D5] border-[#AB70D5] text-white shadow-2xs'
                               : 'bg-[#09050A] border-[#130F14] text-[#7A746D] text-zinc-300 hover:bg-[#1C151E]'
@@ -263,7 +263,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   </div>
 
                   {/* Order: After second (with + and - buttons) */}
-                  <div className="flex items-center justify-between border-[#130F14] pt-3">
+                  <div className="flex items-center justify-between border-t border-[#1C151E] pt-2.5">
                     <label className="text-[11px] font-bold text-[#7A746D] text-zinc-400">
                       After
                     </label>

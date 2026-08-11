@@ -28,34 +28,69 @@ export default function App() {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
-  // Pull to refresh state
-  const [pullDistance, setPullDistance] = useState(0);
+  // Ultra-smooth GPU-accelerated Pull to refresh
+  const pullIndicatorRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number | null>(null);
+  const currentPullRef = useRef<number>(0);
+  const [isReadyToRefresh, setIsReadyToRefresh] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY <= 0) {
+    if (window.scrollY <= 1 && !isRefreshing) {
       startYRef.current = e.touches[0].clientY;
+      currentPullRef.current = 0;
+    } else {
+      startYRef.current = null;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (startYRef.current !== null) {
-      const y = e.touches[0].clientY;
-      const diff = y - startYRef.current;
-      if (diff > 0) {
-        setPullDistance(Math.min(diff * 0.4, 80));
-      } else {
-        setPullDistance(0);
+    if (startYRef.current === null || isRefreshing) return;
+    const y = e.touches[0].clientY;
+    const diff = y - startYRef.current;
+
+    if (diff > 0 && window.scrollY <= 1) {
+      const damped = Math.min(Math.pow(diff, 0.82), 85);
+      currentPullRef.current = damped;
+
+      if (pullIndicatorRef.current) {
+        pullIndicatorRef.current.style.height = `${damped}px`;
+        pullIndicatorRef.current.style.opacity = `${Math.min(damped / 50, 1)}`;
+        pullIndicatorRef.current.style.transition = 'none';
+      }
+
+      if (damped > 60 && !isReadyToRefresh) {
+        setIsReadyToRefresh(true);
+      } else if (damped <= 60 && isReadyToRefresh) {
+        setIsReadyToRefresh(false);
       }
     }
   };
 
   const handleTouchEnd = () => {
-    if (pullDistance > 60) {
-      window.location.reload();
-    }
-    setPullDistance(0);
+    if (startYRef.current === null || isRefreshing) return;
+    const pulled = currentPullRef.current;
     startYRef.current = null;
+
+    if (pulled > 60) {
+      setIsRefreshing(true);
+      if (pullIndicatorRef.current) {
+        pullIndicatorRef.current.style.transition = 'height 0.25s ease-out, opacity 0.25s ease-out';
+        pullIndicatorRef.current.style.height = '60px';
+        pullIndicatorRef.current.style.opacity = '1';
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 400);
+    } else {
+      setIsReadyToRefresh(false);
+      if (pullIndicatorRef.current) {
+        pullIndicatorRef.current.style.transition = 'height 0.25s ease-out, opacity 0.25s ease-out';
+        pullIndicatorRef.current.style.height = '0px';
+        pullIndicatorRef.current.style.opacity = '0';
+      }
+    }
+    currentPullRef.current = 0;
   };
 
   useEffect(() => {
@@ -234,12 +269,12 @@ export default function App() {
       
       {/* Pull to refresh indicator */}
       <div 
-        className="w-full flex justify-center items-end overflow-hidden transition-all duration-200"
-        style={{ height: pullDistance, opacity: pullDistance / 60 }}
+        ref={pullIndicatorRef}
+        className="w-full flex justify-center items-end overflow-hidden h-0 opacity-0 will-change-[height,opacity]"
       >
-        <div className="text-[#777777] text-sm mb-4 flex flex-col items-center gap-2">
-          <RefreshCw className={`w-5 h-5 ${pullDistance > 60 ? 'animate-spin text-white' : ''}`} />
-          {pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}
+        <div className="text-[#777777] text-sm mb-3 flex flex-col items-center gap-1.5 select-none">
+          <RefreshCw className={`w-5 h-5 transition-transform ${isReadyToRefresh || isRefreshing ? 'animate-spin text-white' : ''}`} />
+          <span>{isRefreshing ? 'Refreshing...' : isReadyToRefresh ? 'Release to refresh' : 'Pull to refresh'}</span>
         </div>
       </div>
 
@@ -318,10 +353,16 @@ export default function App() {
         {/* Tasks Section */}
         <div className="flex flex-col mt-3">
           {/* Section Title */}
-          <div className="pt-3 pb-2 border-b border-[#130F14]">
+          <div className="pt-3 pb-2 relative">
             <h2 className="text-[12px] font-light text-[#777777]">
               Tasks
             </h2>
+            <div 
+              className="h-[1px] w-full mt-2" 
+              style={{
+                background: 'linear-gradient(to right, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0) 100%)'
+              }}
+            />
           </div>
 
           {/* Task Compact List */}
