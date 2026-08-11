@@ -20,16 +20,17 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
+          npm install @capacitor/core @capacitor/ios
           npm install -g @capacitor/cli
 
       - name: Build Web App
         run: npm run build
 
+      - name: Add iOS Platform
+        run: npx cap add ios || true
+
       - name: Sync Capacitor iOS
-        run: |
-          rm -rf ios
-          npx cap add ios
-          npx cap sync ios
+        run: npx cap sync ios
 
       - name: Build Unsigned IPA
         run: |
