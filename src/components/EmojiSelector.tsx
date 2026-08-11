@@ -103,7 +103,7 @@ export const EmojiSelector: React.FC<EmojiSelectorProps> = ({ emoji, setEmoji })
 
         {/* Scrollable Commonly used Emojis + MORE button */}
         <div 
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 pr-2 flex-1 scroll-smooth cursor-grab active:cursor-grabbing"
+          className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 pr-2 flex-1 min-w-0 scroll-smooth cursor-grab active:cursor-grabbing"
           ref={scrollRef}
           onMouseDown={onMouseDown}
           onMouseLeave={onMouseLeave}

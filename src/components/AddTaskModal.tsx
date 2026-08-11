@@ -152,11 +152,11 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 I last did this
               </label>
 
-              <div className="grid grid-cols-3 gap-2 mb-2">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-2 w-full max-w-full">
                 <button
                   type="button"
                   onClick={() => setDoneMode('today')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
+                  className={`py-2 px-1 sm:px-2.5 rounded-xl text-xs font-bold border transition-all text-center min-w-0 truncate ${
                     doneMode === 'today'
                       ? 'bg-[#AB70D5] border-[#AB70D5] text-white shadow-2xs'
                       : 'bg-[#130F14] border-[#130F14] text-[#7A746D] text-zinc-400 hover:bg-[#1C151E]'
@@ -167,24 +167,28 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setDoneMode('choose')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
+                  className={`py-2 px-1 sm:px-2.5 rounded-xl text-xs font-bold border transition-all text-center min-w-0 truncate ${
                     doneMode === 'choose'
                       ? 'bg-[#AB70D5] border-[#AB70D5] text-white shadow-2xs'
                       : 'bg-[#130F14] border-[#130F14] text-[#7A746D] text-zinc-400 hover:bg-[#1C151E]'
                   }`}
+                  title="Choose another date"
                 >
-                  Choose another date
+                  <span className="hidden sm:inline">Choose another date</span>
+                  <span className="sm:hidden">Choose date</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setDoneMode('dont-remember')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all ${
+                  className={`py-2 px-1 sm:px-2.5 rounded-xl text-xs font-bold border transition-all text-center min-w-0 truncate ${
                     doneMode === 'dont-remember'
                       ? 'bg-[#AB70D5] border-[#AB70D5] text-white shadow-2xs'
                       : 'bg-[#130F14] border-[#130F14] text-[#7A746D] text-zinc-400 hover:bg-[#1C151E]'
                   }`}
+                  title="I don't remember"
                 >
-                  I don't remember
+                  <span className="hidden sm:inline">I don't remember</span>
+                  <span className="sm:hidden">Don't remember</span>
                 </button>
               </div>
 
@@ -194,7 +198,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                   value={customLastCompletedDate}
                   onChange={(e) => setCustomLastCompletedDate(e.target.value)}
                   id="custom-done-date-picker"
-                  className="w-full max-w-full min-w-0 box-border mt-2 bg-[#130F14] border border-[#130F14] rounded-xl px-4 py-2.5 font-normal text-base sm:text-lg text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5] [color-scheme:dark]"
+                  className="w-full max-w-full min-w-0 box-border mt-2 bg-[#130F14] border border-[#130F14] rounded-xl px-3 sm:px-4 py-2.5 font-normal text-base text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5] [color-scheme:dark] [appearance:none] [-webkit-appearance:none]"
                 />
               )}
             </div>
