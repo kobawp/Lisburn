@@ -103,7 +103,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
         <div className="flex items-center justify-end w-full">
           <button
             onClick={onClose}
-            className="p-2 -mr-2 text-[#777777] hover:text-white transition-colors focus:outline-none"
+            className="p-2 -mr-2 text-white hover:text-[#777777] transition-colors focus:outline-none"
           >
             <X className="w-8 h-8 stroke-[3]" />
           </button>

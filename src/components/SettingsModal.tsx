@@ -1,8 +1,23 @@
 import React, { useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Check } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 import { AppSettings, Task } from '../types';
 import { useOverscrollBounce } from '../hooks/useOverscrollBounce';
+
+const formatTimeString = (timeStr: string): string => {
+  if (!timeStr) return '10:00 PM';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1].padStart(2, '0');
+  if (isNaN(hours)) return timeStr;
+
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const hourStr = hours < 10 ? `0${hours}` : `${hours}`;
+  return `${hourStr}:${minutes} ${ampm}`;
+};
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -215,22 +230,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="mt-4 pt-4 border-t border-[#261C29] space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-[14px] font-normal text-white">From</span>
-                      <input 
-                        type="time" 
-                        value={settings.quietHoursFrom}
-                        onChange={(e) => onUpdateSettings({ quietHoursFrom: e.target.value })}
-                        className="bg-[#261C29] text-white px-3 py-1.5 rounded-full text-[14px] font-normal focus:outline-none focus:ring-1 focus:ring-[#AB70D5]"
-                      />
+                      <div className="relative inline-flex items-center gap-2 bg-[#201625] hover:bg-[#281c30] transition-colors px-3.5 py-1.5 rounded-full border border-white/5 cursor-pointer">
+                        <span className="text-[14px] font-normal text-white tracking-wide select-none">
+                          {formatTimeString(settings.quietHoursFrom)}
+                        </span>
+                        <Clock className="w-4 h-4 text-white/80 shrink-0" />
+                        <input 
+                          type="time" 
+                          value={settings.quietHoursFrom}
+                          onChange={(e) => onUpdateSettings({ quietHoursFrom: e.target.value })}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                        />
+                      </div>
                     </div>
                     <div className="h-px w-full bg-[#261C29]"></div>
                     <div className="flex items-center justify-between">
                       <span className="text-[14px] font-normal text-white">To</span>
-                      <input 
-                        type="time" 
-                        value={settings.quietHoursTo}
-                        onChange={(e) => onUpdateSettings({ quietHoursTo: e.target.value })}
-                        className="bg-[#261C29] text-white px-3 py-1.5 rounded-full text-[14px] font-normal focus:outline-none focus:ring-1 focus:ring-[#AB70D5]"
-                      />
+                      <div className="relative inline-flex items-center gap-2 bg-[#201625] hover:bg-[#281c30] transition-colors px-3.5 py-1.5 rounded-full border border-white/5 cursor-pointer">
+                        <span className="text-[14px] font-normal text-white tracking-wide select-none">
+                          {formatTimeString(settings.quietHoursTo)}
+                        </span>
+                        <Clock className="w-4 h-4 text-white/80 shrink-0" />
+                        <input 
+                          type="time" 
+                          value={settings.quietHoursTo}
+                          onChange={(e) => onUpdateSettings({ quietHoursTo: e.target.value })}
+                          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

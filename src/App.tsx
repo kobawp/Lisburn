@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Reorder, AnimatePresence } from 'motion/react';
+import { Reorder, AnimatePresence, motion } from 'motion/react';
 import { 
   Task, 
   AppSettings, 
@@ -229,38 +229,46 @@ export default function App() {
               >
                 <ArrowUpDown className="w-6 h-6" />
               </button>
-              {isSortMenuOpen && (
-                <div className="absolute left-0 mt-2 w-44 bg-[#130F14] border border-[#2D2A26] rounded-xl shadow-lg z-50 py-1">
-                  <button 
-                    onClick={() => handleSortChange('latest')} 
-                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+              <AnimatePresence>
+                {isSortMenuOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.92, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: -6 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute left-0 mt-2 w-44 bg-[#130F14] border border-[#2D2A26] rounded-xl shadow-lg z-50 py-1 origin-top-left overflow-hidden"
                   >
-                    <span>Latest</span>
-                    {currentSort === 'latest' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
-                  </button>
-                  <button 
-                    onClick={() => handleSortChange('earliest')} 
-                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
-                  >
-                    <span>Earliest</span>
-                    {currentSort === 'earliest' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
-                  </button>
-                  <button 
-                    onClick={() => handleSortChange('name')} 
-                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
-                  >
-                    <span>Name</span>
-                    {currentSort === 'name' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
-                  </button>
-                  <button 
-                    onClick={() => handleSortChange('custom')} 
-                    className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
-                  >
-                    <span>Custom Order</span>
-                    {currentSort === 'custom' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
-                  </button>
-                </div>
-              )}
+                    <button 
+                      onClick={() => handleSortChange('latest')} 
+                      className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                    >
+                      <span>Latest</span>
+                      {currentSort === 'latest' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                    </button>
+                    <button 
+                      onClick={() => handleSortChange('earliest')} 
+                      className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                    >
+                      <span>Earliest</span>
+                      {currentSort === 'earliest' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                    </button>
+                    <button 
+                      onClick={() => handleSortChange('name')} 
+                      className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                    >
+                      <span>Name</span>
+                      {currentSort === 'name' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                    </button>
+                    <button 
+                      onClick={() => handleSortChange('custom')} 
+                      className="flex items-center justify-between w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26] transition-colors"
+                    >
+                      <span>Custom Order</span>
+                      {currentSort === 'custom' && <span className="text-[#d7ae4c] font-bold text-base leading-none">•</span>}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
           
@@ -277,7 +285,17 @@ export default function App() {
         <div className="flex flex-col mt-6">
           <h1 className="text-[2.5rem] leading-none tracking-tight">
             <span className="font-bold text-white">Lis</span>
-            <span className="font-bold text-[#777777]">burn.</span>
+            <motion.span 
+              className="font-bold"
+              animate={{ color: ['#777777', '#ab70d5', '#777777'] }}
+              transition={{
+                duration: 2,
+                ease: "easeInOut",
+                repeat: Infinity
+              }}
+            >
+              burn.
+            </motion.span>
           </h1>
           <p className="text-[#777777] font-light text-[12px] mt-0.5">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
