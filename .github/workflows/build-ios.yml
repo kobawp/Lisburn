@@ -34,9 +34,9 @@ jobs:
 
       - name: Build Unsigned IPA
         run: |
-          cd ios/App
+          cd ios
           # Build the iOS project without code signing
-          xcodebuild -project App.xcodeproj -scheme App -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           
           # Create Payload directory and move the .app bundle inside
           cd build/Build/Products/Release-iphoneos
@@ -50,5 +50,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-unsigned.ipa
-          path: ios/App/build/Build/Products/Release-iphoneos/app-unsigned.ipa
+          path: ios/build/Build/Products/Release-iphoneos/app-unsigned.ipa
           retention-days: 7
