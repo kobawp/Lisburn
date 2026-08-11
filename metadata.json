@@ -1,0 +1,8 @@
+{
+  "name": "Lisburn",
+  "description": "Track how many days since you last completed tasks with at-a-glance counters, optional reminders, and completion history.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
