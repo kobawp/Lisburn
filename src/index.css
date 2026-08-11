@@ -38,6 +38,20 @@ body {
   scrollbar-width: none;
 }
 
+/* Fix iOS WebKit native date/time input width overflow */
+input[type="datetime-local"],
+input[type="time"],
+input[type="date"] {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  color-scheme: dark;
+}
+
+::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
 
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {

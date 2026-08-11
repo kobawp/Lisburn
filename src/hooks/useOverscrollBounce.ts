@@ -5,7 +5,7 @@ interface UseOverscrollBounceOptions {
 }
 
 export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
-  maxPull = 80,
+  maxPull = 120,
 }: UseOverscrollBounceOptions = {}) {
   const containerRef = useRef<T | null>(null);
 
@@ -13,122 +13,114 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
     const el = containerRef.current;
     if (!el) return;
 
-    let startY: number | null = null;
-    let startX: number | null = null;
-    let currentMode: 'top' | 'bottom' | null = null;
-    let isPulling = false;
+    // Enforce vertical touch pan only to eliminate horizontal swiping/overscroll
+    el.style.touchAction = 'pan-y';
+
+    let startY = 0;
+    let startX = 0;
+    let mode: 'top' | 'bottom' | null = null;
+    let isDragging = false;
 
     const getScrollInfo = () => {
       const style = window.getComputedStyle(el);
-      const isScrollContainer = style.overflowY === 'auto' || style.overflowY === 'scroll';
+      const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
 
-      if (isScrollContainer) {
+      if (isScrollable) {
         return {
           scrollTop: el.scrollTop,
-          scrollHeight: Math.max(el.scrollHeight, el.clientHeight),
           clientHeight: el.clientHeight,
+          scrollHeight: el.scrollHeight,
         };
       }
 
-      // Page / Window level scrolling
       const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-      const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, el.scrollHeight);
       const clientHeight = window.innerHeight;
+      const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, el.scrollHeight);
 
-      return { scrollTop, scrollHeight, clientHeight };
+      return { scrollTop, clientHeight, scrollHeight };
     };
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       startY = e.touches[0].clientY;
       startX = e.touches[0].clientX;
-      currentMode = null;
-      isPulling = false;
+      mode = null;
+      isDragging = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (startY === null || startX === null) return;
+      if (e.touches.length !== 1) return;
 
-      const touchY = e.touches[0].clientY;
-      const touchX = e.touches[0].clientX;
-      const diffY = touchY - startY;
-      const diffX = touchX - startX;
+      const currentY = e.touches[0].clientY;
+      const currentX = e.touches[0].clientX;
+      const deltaY = currentY - startY;
+      const deltaX = currentX - startX;
 
-      // Ignore if movement is primarily horizontal
-      if (!isPulling && Math.abs(diffX) > Math.abs(diffY)) {
+      // Ignore if movement is primarily horizontal when drag has not started
+      if (!isDragging && Math.abs(deltaX) > Math.abs(deltaY)) {
         return;
       }
 
-      const { scrollTop, scrollHeight, clientHeight } = getScrollInfo();
+      const { scrollTop, clientHeight, scrollHeight } = getScrollInfo();
 
-      const isAtTop = scrollTop <= 1;
-      const isAtBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 2;
+      const isAtTop = scrollTop <= 0;
+      const isAtBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight - 1;
 
-      if (!isPulling) {
-        if (isAtTop && diffY > 2) {
-          currentMode = 'top';
-          startY = touchY;
-          isPulling = true;
-        } else if (isAtBottom && diffY < -2) {
-          currentMode = 'bottom';
-          startY = touchY;
-          isPulling = true;
+      if (!isDragging) {
+        if (isAtTop && deltaY > 1) {
+          isDragging = true;
+          mode = 'top';
+        } else if (isAtBottom && deltaY < -1) {
+          isDragging = true;
+          mode = 'bottom';
         }
       }
 
-      if (isPulling && currentMode) {
-        const deltaY = touchY - startY;
-
-        if (currentMode === 'top') {
-          if (deltaY > 0) {
-            if (e.cancelable) e.preventDefault();
-            e.stopPropagation();
-
-            const damped = Math.min(Math.pow(deltaY, 0.72) * 1.15, maxPull);
-            el.style.transform = `translateY(${damped}px)`;
-            el.style.transition = 'none';
-          } else {
-            isPulling = false;
-            currentMode = null;
-            el.style.transform = 'translateY(0px)';
-          }
-        } else if (currentMode === 'bottom') {
-          if (deltaY < 0) {
-            if (e.cancelable) e.preventDefault();
-            e.stopPropagation();
-
-            const damped = -1 * Math.min(Math.pow(Math.abs(deltaY), 0.72) * 1.15, maxPull);
-            el.style.transform = `translateY(${damped}px)`;
-            el.style.transition = 'none';
-          } else {
-            isPulling = false;
-            currentMode = null;
-            el.style.transform = 'translateY(0px)';
-          }
-        }
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      startY = null;
-      startX = null;
-
-      if (isPulling) {
-        isPulling = false;
-        currentMode = null;
-
+      if (isDragging && mode) {
         if (e.cancelable) {
           e.preventDefault();
         }
-        e.stopPropagation();
 
-        el.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)';
+        let pull = deltaY;
+        if (mode === 'top') {
+          if (pull < 0) {
+            isDragging = false;
+            mode = null;
+            el.style.transform = 'translateY(0px)';
+            return;
+          }
+        } else if (mode === 'bottom') {
+          if (pull > 0) {
+            isDragging = false;
+            mode = null;
+            el.style.transform = 'translateY(0px)';
+            return;
+          }
+        }
+
+        const absPull = Math.abs(pull);
+        // iOS rubberband logarithmic damping formula
+        const damped = (absPull * 0.52) / (1 + absPull * 0.0035);
+        const clampedDamped = Math.min(damped, maxPull);
+        const finalY = mode === 'top' ? clampedDamped : -clampedDamped;
+
+        el.style.transition = 'none';
+        el.style.transform = `translateY(${finalY}px)`;
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (isDragging || (el.style.transform && el.style.transform !== 'translateY(0px)' && el.style.transform !== 'none')) {
+        isDragging = false;
+        mode = null;
+
+        el.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)';
         el.style.transform = 'translateY(0px)';
 
         setTimeout(() => {
           if (el) {
-            el.style.transform = '';
             el.style.transition = '';
+            el.style.transform = '';
           }
         }, 400);
       }
@@ -136,7 +128,7 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
-    el.addEventListener('touchend', onTouchEnd, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
     el.addEventListener('touchcancel', onTouchEnd, { passive: true });
 
     return () => {
@@ -151,3 +143,4 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
     containerRef,
   };
 }
+

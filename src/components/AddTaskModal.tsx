@@ -194,7 +194,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                   value={customLastCompletedDate}
                   onChange={(e) => setCustomLastCompletedDate(e.target.value)}
                   id="custom-done-date-picker"
-                  className="w-full mt-2 bg-[#130F14] border border-[#130F14] rounded-xl px-3 py-2 font-bold text-lg text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5]"
+                  className="w-full max-w-full min-w-0 box-border mt-2 bg-[#130F14] border border-[#130F14] rounded-xl px-4 py-2.5 font-normal text-base sm:text-lg text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5] [color-scheme:dark]"
                 />
               )}
             </div>

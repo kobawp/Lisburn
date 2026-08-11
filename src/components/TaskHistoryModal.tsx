@@ -106,7 +106,7 @@ export const TaskHistoryModal: React.FC<TaskHistoryModalProps> = ({
                   required
                   value={manualDate}
                   onChange={(e) => setManualDate(e.target.value)}
-                  className="w-full bg-white border border-[#E8E4DE] rounded-xl px-3 py-1.5 text-xs text-[#2D2A26]"
+                  className="w-full max-w-full min-w-0 box-border bg-white border border-[#E8E4DE] rounded-xl px-3 py-1.5 text-xs text-[#2D2A26]"
                 />
               </div>
 
