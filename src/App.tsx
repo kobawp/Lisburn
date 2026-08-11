@@ -13,6 +13,7 @@ import {
   resetTasksToDefault 
 } from './utils/storage';
 import { TaskCompactRow } from './components/TaskCompactRow';
+import { ReorderableTaskItem } from './components/ReorderableTaskItem';
 import { AddTaskModal } from './components/AddTaskModal';
 import { EditTaskModal } from './components/EditTaskModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
@@ -190,9 +191,30 @@ export default function App() {
     return result;
   }, [tasks, searchQuery, currentSort]);
 
+  const isCustomSort = currentSort === 'custom' && !searchQuery.trim();
+  const [isDraggingAnyTask, setIsDraggingAnyTask] = useState(false);
+
+  useEffect(() => {
+    if (isDraggingAnyTask) {
+      const origOverflow = document.body.style.overflow;
+      const origTouchAction = document.body.style.touchAction;
+      const origHtmlOverflow = document.documentElement.style.overflow;
+
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      document.documentElement.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.overflow = origOverflow;
+        document.body.style.touchAction = origTouchAction;
+        document.documentElement.style.overflow = origHtmlOverflow;
+      };
+    }
+  }, [isDraggingAnyTask]);
+
   const handleReorder = (reorderedTasks: Task[]) => {
     // Only allow reordering if there is no active search query and sorting is custom
-    if (!searchQuery.trim() && currentSort === 'custom') {
+    if (isCustomSort) {
       setTasks(reorderedTasks);
     }
   };
@@ -336,23 +358,17 @@ export default function App() {
             axis="y" 
             values={filteredTasks} 
             onReorder={handleReorder}
-            className="flex flex-col"
+            className="flex flex-col gap-2"
           >
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence>
               {filteredTasks.map((task) => (
-                <Reorder.Item 
-                  key={task.id} 
-                  value={task}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                >
-                  <TaskCompactRow
-                    task={task}
-                    onClickTask={(t) => setDetailTask(t)}
-                  />
-                </Reorder.Item>
+                <ReorderableTaskItem
+                  key={task.id}
+                  task={task}
+                  isCustomSort={isCustomSort}
+                  onClickTask={(t) => setDetailTask(t)}
+                  onDragStateChange={(dragging) => setIsDraggingAnyTask(dragging)}
+                />
               ))}
             </AnimatePresence>
           </Reorder.Group>
