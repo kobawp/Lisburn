@@ -39,7 +39,7 @@ export interface Task {
   color?: TaskColor;
 }
 
-export type SortOption = 'custom' | 'latest' | 'earliest' | 'name';
+export type SortOption = 'days-desc' | 'days-asc' | 'status' | 'title' | 'recently-reset';
 
 export type StatusFilter = 'all' | 'overdue' | 'due-soon' | 'fresh' | 'no-reminder';
 

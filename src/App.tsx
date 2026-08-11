@@ -200,10 +200,11 @@ export default function App() {
               </button>
               {isSortMenuOpen && (
                 <div className="absolute left-0 mt-2 w-40 bg-[#130F14] border border-[#2D2A26] rounded-xl shadow-lg z-50 py-1">
-                  <button onClick={() => handleSortChange('latest')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Latest</button>
-                  <button onClick={() => handleSortChange('earliest')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Earliest</button>
-                  <button onClick={() => handleSortChange('name')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Name</button>
-                  <button onClick={() => handleSortChange('custom')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Custom Order</button>
+                  <button onClick={() => handleSortChange('days-desc')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Most Days Ago</button>
+                  <button onClick={() => handleSortChange('days-asc')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Least Days Ago</button>
+                  <button onClick={() => handleSortChange('status')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Status</button>
+                  <button onClick={() => handleSortChange('title')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Alphabetical</button>
+                  <button onClick={() => handleSortChange('recently-reset')} className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#2D2A26]">Recently Reset</button>
                 </div>
               )}
             </div>
