@@ -97,7 +97,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     >
       <div 
         ref={containerRef}
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y"
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y overscroll-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-end w-full">
@@ -197,11 +197,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           <div>
             <h3 className="text-[14px] font-bold text-[#777777] mb-2 px-1 border-b border-[#261C29] pb-2">History</h3>
             <div 
-              className="pt-2 space-y-3 px-1"
-              style={{
-                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 100%)',
-                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 100%)'
-              }}
+              className="pt-2 pb-6 space-y-3 px-1 max-h-64 overflow-y-auto no-scrollbar touch-pan-y"
+              style={
+                sortedHistory.length > 3
+                  ? {
+                      WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%)',
+                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%)'
+                    }
+                  : undefined
+              }
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
             >
               {sortedHistory.length === 0 ? (
                 <p className="text-[14px] text-[#777777] italic">No history entries yet.</p>

@@ -20,12 +20,12 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
 
     const getScrollInfo = () => {
       const style = window.getComputedStyle(el);
-      const isScrollable = (style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+      const isScrollContainer = style.overflowY === 'auto' || style.overflowY === 'scroll';
 
-      if (isScrollable) {
+      if (isScrollContainer) {
         return {
           scrollTop: el.scrollTop,
-          scrollHeight: el.scrollHeight,
+          scrollHeight: Math.max(el.scrollHeight, el.clientHeight),
           clientHeight: el.clientHeight,
         };
       }

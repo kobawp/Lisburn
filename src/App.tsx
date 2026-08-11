@@ -199,7 +199,7 @@ export default function App() {
 
   return (
     <div 
-      className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200 overflow-hidden"
+      className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200 overscroll-none"
     >
       {/* Main Content Area */}
       <main 

@@ -29,7 +29,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleExportJSON = async () => {
     const filename = `days-since-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    const jsonStr = JSON.stringify(tasks, null, 2);
+    // Ensure all fields including notes, specific completion notes, and history are included
+    const exportTasks = tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description || '',
+      category: t.category || 'General',
+      icon: t.icon || '📌',
+      color: t.color || 'indigo',
+      lastCompletedAt: t.lastCompletedAt || null,
+      reminderIntervalHours: t.reminderIntervalHours ?? null,
+      createdAt: t.createdAt || new Date().toISOString(),
+      history: Array.isArray(t.history)
+        ? t.history.map((h) => ({
+            id: h.id,
+            timestamp: h.timestamp,
+            note: h.note || ''
+          }))
+        : []
+    }));
+
+    const jsonStr = JSON.stringify(exportTasks, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
 
     // Try Web Share API first for native iOS "Save to Files"
@@ -68,9 +88,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
+        let rawList: any[] = [];
+
         if (Array.isArray(parsed)) {
-          onImportTasks(parsed);
-          alert('Tasks imported successfully!');
+          rawList = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.tasks)) {
+            rawList = parsed.tasks;
+          } else if (Array.isArray(parsed.data)) {
+            rawList = parsed.data;
+          }
+        }
+
+        if (rawList.length > 0 || (Array.isArray(parsed) && parsed.length === 0)) {
+          const sanitizedTasks: Task[] = rawList.map((item, index) => {
+            const rawHistory = Array.isArray(item.history) ? item.history : [];
+            const history = rawHistory.map((h: any, hIdx: number) => ({
+              id: typeof h.id === 'string' && h.id ? h.id : `hist-${Date.now()}-${index}-${hIdx}`,
+              timestamp: typeof h.timestamp === 'string' && !isNaN(Date.parse(h.timestamp))
+                ? new Date(h.timestamp).toISOString()
+                : new Date().toISOString(),
+              note: typeof h.note === 'string' ? h.note : (typeof h.notes === 'string' ? h.notes : '')
+            }));
+
+            let lastCompletedAt = item.lastCompletedAt ?? null;
+            if (lastCompletedAt && typeof lastCompletedAt === 'string' && !isNaN(Date.parse(lastCompletedAt))) {
+              lastCompletedAt = new Date(lastCompletedAt).toISOString();
+            } else if (history.length > 0) {
+              lastCompletedAt = history[0].timestamp;
+            } else {
+              lastCompletedAt = null;
+            }
+
+            return {
+              id: typeof item.id === 'string' && item.id ? item.id : `task-${Date.now()}-${index}`,
+              title: typeof item.title === 'string' && item.title.trim() ? item.title.trim() : 'Untitled Task',
+              description: typeof item.description === 'string'
+                ? item.description
+                : (typeof item.note === 'string' ? item.note : (typeof item.notes === 'string' ? item.notes : '')),
+              category: typeof item.category === 'string' ? item.category : 'General',
+              icon: typeof item.icon === 'string' ? item.icon : '📌',
+              color: typeof item.color === 'string' ? item.color : 'indigo',
+              lastCompletedAt,
+              reminderIntervalHours: typeof item.reminderIntervalHours === 'number' ? item.reminderIntervalHours : null,
+              history,
+              createdAt: typeof item.createdAt === 'string' && !isNaN(Date.parse(item.createdAt))
+                ? new Date(item.createdAt).toISOString()
+                : new Date().toISOString()
+            };
+          });
+
+          onImportTasks(sanitizedTasks);
+          alert(`Successfully imported ${sanitizedTasks.length} task${sanitizedTasks.length === 1 ? '' : 's'}!`);
         } else {
           alert('Invalid backup file format.');
         }
@@ -93,7 +162,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       {/* Scrollable Container */}
       <div 
         ref={containerRef}
-        className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y"
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y overscroll-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 pt-[54px] pb-24 space-y-8">
@@ -263,7 +332,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="h-px w-[calc(100%-2.5rem)] ml-5 bg-[#261C29]"></div>
               
               <div className="px-5 py-4 text-[14px] font-normal text-white leading-relaxed">
-                <span className="text-[#777777]">Lisburn</span> allows you to remember past tasks when your memory gets fuzzy. Record something after you've done it and forget it about.
+                <span className="text-[#777777]">Lisburn</span> allows you to remember past, reoccuring tasks when your memory gets fuzzy. Record something after you've done it and forget about it.
               </div>
             </div>
           </div>

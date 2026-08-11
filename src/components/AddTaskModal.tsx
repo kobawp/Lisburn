@@ -85,7 +85,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     >
       <div 
         ref={containerRef}
-        className="w-full max-w-5xl mx-auto flex-1 flex flex-col overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y"
+        className="w-full max-w-5xl mx-auto flex-1 flex flex-col overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y overscroll-none"
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
