@@ -32,6 +32,18 @@ export function useSwipeDownDismiss<T extends HTMLElement = HTMLDivElement>({
     const el = containerRef.current;
     if (!el || startYRef.current === null) return;
 
+    // Ignore if touch target is inside a scrollable child element (nested scroll container)
+    let target = e.target as HTMLElement | null;
+    while (target && target !== el) {
+      const style = window.getComputedStyle(target);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        if (target.scrollHeight > target.clientHeight) {
+          return;
+        }
+      }
+      target = target.parentElement;
+    }
+
     const currentY = e.touches[0].clientY;
     const diff = currentY - startYRef.current;
 

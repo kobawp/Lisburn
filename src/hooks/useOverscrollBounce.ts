@@ -61,6 +61,23 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
         return;
       }
 
+      // Ignore if touch target is inside a scrollable child element (nested scroll container)
+      let target = e.target as HTMLElement | null;
+      while (target && target !== el) {
+        const style = window.getComputedStyle(target);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          if (target.scrollHeight > target.clientHeight) {
+            return;
+          }
+        }
+        if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+          if (target.scrollWidth > target.clientWidth) {
+            return;
+          }
+        }
+        target = target.parentElement;
+      }
+
       const { scrollTop, clientHeight, scrollHeight } = getScrollInfo();
 
       const isAtTop = scrollTop <= 0;

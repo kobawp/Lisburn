@@ -48,34 +48,6 @@ export const EmojiSelector: React.FC<EmojiSelectorProps> = ({ emoji, setEmoji })
     scrollRef.current.scrollLeft = scrollLeft.current - walk;
   };
 
-  const modalScrollRef = useRef<HTMLDivElement>(null);
-  const isModalDragging = useRef(false);
-  const startY = useRef(0);
-  const scrollTop = useRef(0);
-
-  const onModalMouseDown = (e: React.MouseEvent) => {
-    isModalDragging.current = true;
-    startY.current = e.pageY - (modalScrollRef.current?.offsetTop || 0);
-    scrollTop.current = modalScrollRef.current?.scrollTop || 0;
-  };
-
-  const onModalMouseLeave = () => {
-    isModalDragging.current = false;
-  };
-
-  const onModalMouseUp = () => {
-    isModalDragging.current = false;
-  };
-
-  const onModalMouseMove = (e: React.MouseEvent) => {
-    if (!isModalDragging.current || !modalScrollRef.current) return;
-    e.preventDefault();
-    const y = e.pageY - (modalScrollRef.current.offsetTop || 0);
-    const walk = (y - startY.current) * 2;
-    modalScrollRef.current.scrollTop = scrollTop.current - walk;
-  };
-
-
   const handleOpenModal = () => {
     setTempEmoji(emoji || '📌');
     setIsModalOpen(true);
@@ -139,11 +111,18 @@ export const EmojiSelector: React.FC<EmojiSelectorProps> = ({ emoji, setEmoji })
 
       {/* Emoji Picker Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-[#09050A] border border-[#130F14] rounded-[24px] shadow-2xl flex flex-col max-h-[85vh]">
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200"
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+        >
+          <div className="relative w-full max-w-md bg-[#09050A] border border-[#130F14] rounded-[24px] shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[#130F14]">
+            <div className="flex items-center justify-between p-4 border-b border-[#130F14] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-[#130F14] flex items-center justify-center text-2xl">
                   {tempEmoji}
@@ -170,12 +149,7 @@ export const EmojiSelector: React.FC<EmojiSelectorProps> = ({ emoji, setEmoji })
 
             {/* Categories */}
             <div 
-              className="p-4 overflow-y-auto flex-1 space-y-6 no-scrollbar cursor-grab active:cursor-grabbing"
-              ref={modalScrollRef}
-              onMouseDown={onModalMouseDown}
-              onMouseLeave={onModalMouseLeave}
-              onMouseUp={onModalMouseUp}
-              onMouseMove={onModalMouseMove}
+              className="p-4 overflow-y-auto flex-1 min-h-0 space-y-6 touch-pan-y overscroll-contain"
             >
               {CATEGORIES.map(cat => (
                 <div key={cat.name}>
