@@ -13,7 +13,7 @@ import {
   resetTasksToDefault 
 } from './utils/storage';
 import { TaskCompactRow } from './components/TaskCompactRow';
-import { ReorderableTaskItem } from './components/ReorderableTaskItem';
+import { CustomReorderList } from './components/CustomReorderList';
 import { AddTaskModal } from './components/AddTaskModal';
 import { EditTaskModal } from './components/EditTaskModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
@@ -29,6 +29,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+  const searchBarRef = useRef<HTMLDivElement>(null);
 
   const { containerRef: mainRef } = useOverscrollBounce<HTMLDivElement>();
 
@@ -192,25 +193,6 @@ export default function App() {
   }, [tasks, searchQuery, currentSort]);
 
   const isCustomSort = currentSort === 'custom' && !searchQuery.trim();
-  const [isDraggingAnyTask, setIsDraggingAnyTask] = useState(false);
-
-  useEffect(() => {
-    if (isDraggingAnyTask) {
-      const origOverflow = document.body.style.overflow;
-      const origTouchAction = document.body.style.touchAction;
-      const origHtmlOverflow = document.documentElement.style.overflow;
-
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-      document.documentElement.style.overflow = 'hidden';
-
-      return () => {
-        document.body.style.overflow = origOverflow;
-        document.body.style.touchAction = origTouchAction;
-        document.documentElement.style.overflow = origHtmlOverflow;
-      };
-    }
-  }, [isDraggingAnyTask]);
 
   const handleReorder = (reorderedTasks: Task[]) => {
     // Only allow reordering if there is no active search query and sorting is custom
@@ -303,7 +285,7 @@ export default function App() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative mt-6">
+        <div ref={searchBarRef} className="relative mt-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-[#777777]" />
           <input
             type="text"
@@ -354,24 +336,13 @@ export default function App() {
             </div>
           </div>
         ) : (
-          <Reorder.Group 
-            axis="y" 
-            values={filteredTasks} 
+          <CustomReorderList
+            tasks={filteredTasks}
+            isCustomSort={isCustomSort}
             onReorder={handleReorder}
-            className="flex flex-col gap-2"
-          >
-            <AnimatePresence>
-              {filteredTasks.map((task) => (
-                <ReorderableTaskItem
-                  key={task.id}
-                  task={task}
-                  isCustomSort={isCustomSort}
-                  onClickTask={(t) => setDetailTask(t)}
-                  onDragStateChange={(dragging) => setIsDraggingAnyTask(dragging)}
-                />
-              ))}
-            </AnimatePresence>
-          </Reorder.Group>
+            onClickTask={(t) => setDetailTask(t)}
+            searchBarRef={searchBarRef}
+          />
         )}
           </div>
         </div>

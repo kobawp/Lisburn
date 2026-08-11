@@ -49,7 +49,7 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
+      if (e.defaultPrevented || e.touches.length !== 1) return;
 
       const currentY = e.touches[0].clientY;
       const currentX = e.touches[0].clientX;
