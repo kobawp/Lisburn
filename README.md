@@ -2,7 +2,7 @@
 
 <img width="120" height="120" alt="Lisburn Logo" src="https://github.com/user-attachments/assets/191358d0-b231-4757-90b6-ca4ece421ee0" />
 
-# Lisburn App
+# Lisburn
 
 A mobile-friendly web application for remembering reocurring tasks! 
 
