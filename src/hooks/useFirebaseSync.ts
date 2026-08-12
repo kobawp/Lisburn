@@ -32,9 +32,13 @@ export function useFirebaseSync() {
         // Auto sign in anonymously if not signed in, so firestore sync works out of the box
         try {
           const anonUser = await signInAnon();
-          setUser(anonUser);
+          if (anonUser) {
+            setUser(anonUser);
+          } else {
+            setUser(null);
+          }
         } catch (err) {
-          console.warn('Anonymous sign-in failed, running local-only:', err);
+          console.warn('Anonymous sign-in skipped, running local-only:', err);
           setUser(null);
         }
       } else {
@@ -210,9 +214,14 @@ export function useFirebaseSync() {
   const handleGoogleSignIn = async () => {
     try {
       setSyncStatus('syncing');
-      await signInWithGoogle();
+      const loggedInUser = await signInWithGoogle();
       setSyncStatus('synced');
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request') {
+        console.log('User closed Google Sign-In popup.');
+        setSyncStatus('synced');
+        return;
+      }
       console.error('Google Sign-In failed:', e);
       setSyncStatus('error');
     }

@@ -3,6 +3,7 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInWithRedirect,
   signInAnonymously, 
   signOut, 
   onAuthStateChanged,
@@ -46,9 +47,33 @@ export const googleProvider = new GoogleAuthProvider();
 
 export async function signInWithGoogle() {
   try {
+    const isCapacitor = typeof window !== 'undefined' && ((window as any)?.Capacitor !== undefined || window.location.href.startsWith('capacitor:'));
+    if (isCapacitor) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      } catch (redirectErr) {
+        console.warn('Redirect sign-in error:', redirectErr);
+        return null;
+      }
+    }
+
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+      console.log('Google Sign-In popup closed by user.');
+      return null;
+    }
+    if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/operation-not-supported-in-this-environment') {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      } catch (redirectErr) {
+        console.warn('Redirect sign-in fallback error:', redirectErr);
+        return null;
+      }
+    }
     console.error('Error signing in with Google:', error);
     throw error;
   }
@@ -58,9 +83,13 @@ export async function signInAnon() {
   try {
     const result = await signInAnonymously(auth);
     return result.user;
-  } catch (error) {
-    console.error('Error signing in anonymously:', error);
-    throw error;
+  } catch (error: any) {
+    if (error?.code === 'auth/admin-restricted-operation' || error?.code === 'auth/operation-not-allowed') {
+      console.warn('Anonymous sign-in is disabled in Firebase console. Operating in local mode.');
+      return null;
+    }
+    console.warn('Error signing in anonymously:', error);
+    return null;
   }
 }
 

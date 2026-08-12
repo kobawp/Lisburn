@@ -2,9 +2,9 @@
 
 <img width="120" height="120" alt="Lisburn Logo" src="https://github.com/user-attachments/assets/191358d0-b231-4757-90b6-ca4ece421ee0" />
 
-# Lisburn App
+# Lisburn
 
-A mobile-friendly web application for remembering recurring tasks! 
+A mobile-friendly web application that answers the question, "When did I last do this?"
 
 <p align="center">
   <a href="https://lisburn.ai.studio/">
@@ -19,10 +19,8 @@ A mobile-friendly web application for remembering recurring tasks!
 
 ---
 
-## 📱 Features
-* Built from Google AI Studio web source code.
-* Support for iOS (.ipa), Android (.apk) will come in the future.
-* Smooth mobile UI experience.
+## 📱 Purpose?
+* Have you ever wondered, when did I last do this? It could be when did you last change your car oil, when did you last water your plants, etc. This app lets you remember the last time you did something, whenever you need it. These type of tasks don't necessarily have a set time or day, so it is hard to plan for it in a regular calendar. That is what Lisburn solves!
 
 ---
 
