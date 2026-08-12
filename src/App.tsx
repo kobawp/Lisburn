@@ -217,6 +217,8 @@ export default function App() {
     }
   };
 
+  const isAnyModalOpen = isAddTaskOpen || !!editingTask || isSettingsOpen || !!detailTask;
+
   return (
     <div 
       className="min-h-screen bg-[#09050A] text-[#4A443F] text-zinc-200 flex flex-col font-sans transition-colors duration-200 overscroll-none"
@@ -225,6 +227,7 @@ export default function App() {
       <main 
         ref={mainRef}
         className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-[54px] pb-12 flex flex-col"
+        style={{ display: isAnyModalOpen ? 'none' : 'flex' }}
       >
         
         {/* Header Icons */}
