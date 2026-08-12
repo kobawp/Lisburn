@@ -80,12 +80,15 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-hidden"
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto h-[var(--vv-height,100dvh)] max-h-[var(--vv-height,100dvh)]"
     >
       <div 
         ref={containerRef}
-        className="w-full max-w-5xl mx-auto flex-1 flex flex-col overflow-y-auto overflow-x-hidden no-scrollbar touch-pan-y overscroll-none"
+        className="w-full max-w-5xl mx-auto flex-1 flex flex-col overflow-y-auto no-scrollbar touch-pan-y overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
@@ -115,7 +118,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
             
             {/* Task Title */}
             <div>
-              <label className="block text-[#777777] font-light text-[14px] mb-1.5">
+              <label className="block text-[#777777] font-light text-[14px] mb-1.5" htmlFor="new-task-title-input">
                 Task <span className="text-[#B91C1C] text-rose-400">*</span>
               </label>
               <input
@@ -125,13 +128,17 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Goon"
                 id="new-task-title-input"
-                className="w-full bg-[#130F14] border border-[#130F14] rounded-xl px-4 py-2.5 text-lg font-bold text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5]"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                enterKeyHint="next"
+                className="w-full bg-[#130F14] border border-[#130F14] rounded-xl px-4 py-2.5 text-lg font-bold text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5] select-text touch-auto"
               />
             </div>
 
             {/* Task Description */}
             <div>
-              <label className="block text-[#777777] font-light text-[14px] mb-1.5">
+              <label className="block text-[#777777] font-light text-[14px] mb-1.5" htmlFor="new-task-desc-input">
                 Notes (Optional)
               </label>
               <textarea
@@ -140,7 +147,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 rows={2}
                 placeholder="Add a note..."
                 id="new-task-desc-input"
-                className="w-full bg-[#130F14] border border-[#130F14] rounded-xl px-4 py-2.5 text-lg font-normal text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5] resize-none"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                className="w-full bg-[#130F14] border border-[#130F14] rounded-xl px-4 py-2.5 text-lg font-normal text-white placeholder:text-[#777777] focus:outline-none focus:border-[#AB70D5] resize-none select-text touch-auto"
               />
             </div>
 

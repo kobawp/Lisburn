@@ -12,16 +12,24 @@
 :root {
   background-color: #FDFBF7;
   color: #4A443F;
+  --vv-height: 100dvh;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   font-family: var(--font-sans);
   background-color: #FDFBF7;
   color: #4A443F;
-  min-height: 100vh;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
   transition: background-color 0.2s ease, color 0.2s ease;
-  overscroll-behavior-y: none;
-  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: contain;
 }
 
 .dark body {

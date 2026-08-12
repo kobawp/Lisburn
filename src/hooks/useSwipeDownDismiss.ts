@@ -18,6 +18,23 @@ export function useSwipeDownDismiss<T extends HTMLElement = HTMLDivElement>({
     const el = containerRef.current;
     if (!el) return;
 
+    let target = e.target as HTMLElement | null;
+    while (target && target !== el) {
+      const tag = target.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'BUTTON' ||
+        tag === 'LABEL' ||
+        target.isContentEditable
+      ) {
+        startYRef.current = null;
+        return;
+      }
+      target = target.parentElement;
+    }
+
     // Only initiate swipe-down dismiss if container is at top
     if (el.scrollTop <= 1) {
       startYRef.current = e.touches[0].clientY;

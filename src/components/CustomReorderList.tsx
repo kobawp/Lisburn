@@ -18,7 +18,6 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
   searchBarRef,
 }) => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [holdingTaskId, setHoldingTaskId] = useState<string | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
 
   // Synchronous refs for event handlers
@@ -35,31 +34,24 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
     setTargetIndex(idx);
   };
 
-  // References to keep track of pointer state during drag
   const listContainerRef = useRef<HTMLDivElement | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const startPosRef = useRef<{ x: number; y: number } | null>(null);
   const grabOffsetYRef = useRef<number>(0);
   const pointerYRef = useRef<number>(0);
   const cardRectRef = useRef<{ left: number; top: number; width: number; height: number } | null>(null);
 
-  // Floating card position state for UI rendering
+  // Fixed snapshot of center Y positions in document coordinates at the moment drag starts
+  const initialCentersRef = useRef<number[]>([]);
+
+  // Floating card top coordinate in viewport
   const [floatingTop, setFloatingTop] = useState<number>(0);
 
-  // Ref to hold current tasks during drag
+  // Current tasks reference
   const currentTasksRef = useRef<Task[]>(tasks);
   useEffect(() => {
     currentTasksRef.current = tasks;
   }, [tasks]);
 
-  const clearTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  // Compute boundaries for the floating card
+  // Viewport floating bounds for dragged card
   const getBoundaries = useCallback(() => {
     const cardHeight = cardRectRef.current?.height || 56;
     let searchBottom = 110;
@@ -76,51 +68,45 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
     };
   }, [searchBarRef]);
 
-  // Update target index based on current pointer position
-  const updateTargetIndex = useCallback(() => {
-    if (!listContainerRef.current || !draggedTaskIdRef.current) return;
-
+  // Snapshot layout slots before drag moves items
+  const snapshotSlotCenters = useCallback(() => {
+    if (!listContainerRef.current) return;
     const children = Array.from(listContainerRef.current.children) as HTMLElement[];
-    if (children.length === 0) return;
+    const currentScrollY = window.scrollY;
 
-    const currentY = pointerYRef.current;
+    const centers: number[] = [];
+    children.forEach((child) => {
+      const rect = child.getBoundingClientRect();
+      centers.push(rect.top + currentScrollY + rect.height / 2);
+    });
+
+    initialCentersRef.current = centers;
+  }, []);
+
+  // Calculate target index using fixed document slot centers
+  const updateTargetIndex = useCallback(() => {
+    const centers = initialCentersRef.current;
+    if (!draggedTaskIdRef.current || !centers || centers.length === 0) return;
+
+    const currentDocY = pointerYRef.current + window.scrollY;
+
     let closestIndex = 0;
     let minDistance = Infinity;
 
-    children.forEach((child, idx) => {
-      const rect = child.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
-      const distance = Math.abs(currentY - centerY);
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestIndex = idx;
+    for (let i = 0; i < centers.length; i++) {
+      const dist = Math.abs(currentDocY - centers[i]);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = i;
       }
-    });
+    }
 
     if (targetIndexRef.current !== closestIndex) {
       updateTargetIndexState(closestIndex);
     }
   }, []);
 
-  // Pointer move handler during drag
-  const handleWindowPointerMove = useCallback(
-    (e: PointerEvent | TouchEvent) => {
-      const clientY = 'touches' in e ? e.touches[0].clientY : (e as PointerEvent).clientY;
-      pointerYRef.current = clientY;
-
-      // Update floating card top position bounded between search bar and bottom screen
-      const bounds = getBoundaries();
-      const rawTop = clientY - grabOffsetYRef.current;
-      const clamped = Math.max(bounds.top, Math.min(bounds.bottom, rawTop));
-      setFloatingTop(clamped);
-
-      updateTargetIndex();
-    },
-    [getBoundaries, updateTargetIndex]
-  );
-
-  // Auto-scroll loop when dragging near top/bottom edges of the screen
+  // RAF Auto-scroll loop
   const autoScrollRafRef = useRef<number | null>(null);
 
   const startAutoScroll = useCallback(() => {
@@ -129,25 +115,24 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
 
       const currentY = pointerYRef.current;
       const bounds = getBoundaries();
-      const topScrollZone = bounds.top + 45;
-      const bottomScrollZone = window.innerHeight - 70;
+      const topScrollZone = bounds.top + 50;
+      const bottomScrollZone = window.innerHeight - 80;
 
       let scrollSpeed = 0;
 
       if (currentY < topScrollZone && window.scrollY > 0) {
-        const factor = Math.min(1, (topScrollZone - currentY) / 45);
-        scrollSpeed = -Math.max(3, factor * 16);
+        const factor = Math.min(1, (topScrollZone - currentY) / 50);
+        scrollSpeed = -Math.max(3, factor * 18);
       } else if (
         currentY > bottomScrollZone &&
-        window.scrollY + window.innerHeight < document.documentElement.scrollHeight
+        window.scrollY + window.innerHeight < document.documentElement.scrollHeight - 5
       ) {
-        const factor = Math.min(1, (currentY - bottomScrollZone) / 45);
-        scrollSpeed = Math.max(3, factor * 16);
+        const factor = Math.min(1, (currentY - bottomScrollZone) / 50);
+        scrollSpeed = Math.max(3, factor * 18);
       }
 
       if (scrollSpeed !== 0) {
         window.scrollBy(0, scrollSpeed);
-        // Recalculate target index while scrolling
         updateTargetIndex();
       }
 
@@ -164,9 +149,47 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
     }
   }, []);
 
-  // Finish or cancel drag operation
+  // Activate drag for a task
+  const startDrag = useCallback(
+    (taskId: string, clientY: number, rowRect: DOMRect) => {
+      snapshotSlotCenters();
+
+      const taskIndex = currentTasksRef.current.findIndex((t) => t.id === taskId);
+      cardRectRef.current = {
+        left: rowRect.left,
+        top: rowRect.top,
+        width: rowRect.width,
+        height: rowRect.height,
+      };
+      grabOffsetYRef.current = clientY - rowRect.top;
+
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate(25);
+        } catch {
+          // ignore
+        }
+      }
+
+      updateDraggedTaskId(taskId);
+      updateTargetIndexState(taskIndex >= 0 ? taskIndex : 0);
+
+      let searchBottom = 110;
+      if (searchBarRef.current) {
+        searchBottom = searchBarRef.current.getBoundingClientRect().bottom + 8;
+      }
+      const screenBottom = window.innerHeight - rowRect.height - 12;
+      const initialTop = Math.max(
+        searchBottom,
+        Math.min(screenBottom, clientY - grabOffsetYRef.current)
+      );
+      setFloatingTop(initialTop);
+    },
+    [snapshotSlotCenters, searchBarRef]
+  );
+
+  // End drag operation
   const endDrag = useCallback(() => {
-    clearTimer();
     stopAutoScroll();
 
     const activeId = draggedTaskIdRef.current;
@@ -185,109 +208,128 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
 
     updateDraggedTaskId(null);
     updateTargetIndexState(null);
-    setHoldingTaskId(null);
-  }, [clearTimer, stopAutoScroll, onReorder]);
+    initialCentersRef.current = [];
+  }, [stopAutoScroll, onReorder]);
 
-  // Prevent default page scroll on touchmove while actively dragging
+  // Touch listener setup: ONLY handle touches originating on [data-drag-handle="true"]
   useEffect(() => {
-    if (!draggedTaskId) return;
+    const container = listContainerRef.current;
+    if (!container || !isCustomSort) return;
 
-    const preventTouch = (e: TouchEvent) => {
-      if (e.cancelable) {
-        e.preventDefault();
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+
+      const target = e.target as HTMLElement | null;
+      const isHandle = !!target?.closest('[data-drag-handle="true"]');
+
+      // STRICT RULE: If the touch did NOT originate on the grip handle, ignore completely!
+      if (!isHandle) return;
+
+      const row = target?.closest('[data-task-id]') as HTMLElement | null;
+      if (!row) return;
+
+      const taskId = row.getAttribute('data-task-id');
+      if (!taskId) return;
+
+      const rect = row.getBoundingClientRect();
+      const clientY = touch.clientY;
+      pointerYRef.current = clientY;
+
+      if (e.cancelable) e.preventDefault();
+      startDrag(taskId, clientY, rect);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!draggedTaskIdRef.current) return;
+      if (e.touches.length !== 1) return;
+
+      const touch = e.touches[0];
+      const clientY = touch.clientY;
+
+      if (e.cancelable) e.preventDefault();
+      pointerYRef.current = clientY;
+
+      const bounds = getBoundaries();
+      const rawTop = clientY - grabOffsetYRef.current;
+      const clamped = Math.max(bounds.top, Math.min(bounds.bottom, rawTop));
+      setFloatingTop(clamped);
+
+      updateTargetIndex();
+    };
+
+    const handleTouchEnd = () => {
+      if (draggedTaskIdRef.current) {
+        endDrag();
       }
     };
 
-    window.addEventListener('touchmove', preventTouch, { passive: false });
-    window.addEventListener('pointermove', handleWindowPointerMove);
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [
+    isCustomSort,
+    endDrag,
+    getBoundaries,
+    updateTargetIndex,
+    startDrag,
+  ]);
+
+  // Window pointer listeners for active drag & auto scroll RAF
+  useEffect(() => {
+    if (!draggedTaskId) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      pointerYRef.current = e.clientY;
+      const bounds = getBoundaries();
+      const rawTop = e.clientY - grabOffsetYRef.current;
+      const clamped = Math.max(bounds.top, Math.min(bounds.bottom, rawTop));
+      setFloatingTop(clamped);
+      updateTargetIndex();
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', endDrag);
     window.addEventListener('pointercancel', endDrag);
-    window.addEventListener('touchend', endDrag);
 
     startAutoScroll();
 
     return () => {
-      window.removeEventListener('touchmove', preventTouch);
-      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', endDrag);
       window.removeEventListener('pointercancel', endDrag);
-      window.removeEventListener('touchend', endDrag);
       stopAutoScroll();
     };
-  }, [draggedTaskId, handleWindowPointerMove, endDrag, startAutoScroll, stopAutoScroll]);
+  }, [draggedTaskId, getBoundaries, updateTargetIndex, endDrag, startAutoScroll, stopAutoScroll]);
 
-  // Start hold timer on pointer down
+  // Pointer event fallback for desktop mouse clicks on grip handle
   const handleItemPointerDown = (
     e: React.PointerEvent<HTMLDivElement>,
-    task: Task,
-    index: number
+    task: Task
   ) => {
+    if (e.pointerType === 'touch') return; // Handled by non-passive touch listeners
     if (!isCustomSort) return;
 
-    const clientX = e.clientX;
+    const isHandle = !!(e.target as HTMLElement).closest('[data-drag-handle="true"]');
+    if (!isHandle) return; // STRICT RULE: Only start drag if clicking grip handle!
+
     const clientY = e.clientY;
-    startPosRef.current = { x: clientX, y: clientY };
     pointerYRef.current = clientY;
 
     const targetEl = e.currentTarget;
     const rect = targetEl.getBoundingClientRect();
-    cardRectRef.current = {
-      left: rect.left,
-      top: rect.top,
-      width: rect.width,
-      height: rect.height,
-    };
-    grabOffsetYRef.current = clientY - rect.top;
 
-    clearTimer();
-    setHoldingTaskId(task.id);
-
-    timerRef.current = setTimeout(() => {
-      clearTimer();
-
-      // Trigger haptic vibration if supported
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        try {
-          navigator.vibrate(30);
-        } catch {
-          // ignore
-        }
-      }
-
-      updateDraggedTaskId(task.id);
-      updateTargetIndexState(index);
-
-      // Set initial clamped top
-      let searchBottom = 110;
-      if (searchBarRef.current) {
-        searchBottom = searchBarRef.current.getBoundingClientRect().bottom + 8;
-      }
-      const screenBottom = window.innerHeight - rect.height - 12;
-      const initialTop = Math.max(searchBottom, Math.min(screenBottom, clientY - (clientY - rect.top)));
-      setFloatingTop(initialTop);
-    }, 500); // 0.5 second hold
+    startDrag(task.id, clientY, rect);
   };
 
-  const handleItemPointerMove = (e: React.PointerEvent) => {
-    if (timerRef.current && startPosRef.current) {
-      const dx = Math.abs(e.clientX - startPosRef.current.x);
-      const dy = Math.abs(e.clientY - startPosRef.current.y);
-      // Cancel hold if moved > 8px before 500ms
-      if (dx > 8 || dy > 8) {
-        clearTimer();
-        setHoldingTaskId(null);
-      }
-    }
-  };
-
-  const handleItemPointerUp = () => {
-    clearTimer();
-    if (!draggedTaskId) {
-      setHoldingTaskId(null);
-    }
-  };
-
-  // Build the array of display items for rendering
   const getDisplayItems = () => {
     if (!draggedTaskId || targetIndex === null) return tasks;
 
@@ -310,13 +352,12 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
       <div ref={listContainerRef} className="flex flex-col gap-2 relative select-none">
         {displayTasks.map((task) => {
           const isBeingDragged = task.id === draggedTaskId;
-          const isHoldingThis = task.id === holdingTaskId;
 
           if (isBeingDragged) {
-            // Render placeholder slot in list where task will drop
             return (
               <div
                 key={task.id}
+                data-task-id={task.id}
                 style={{ height: `${cardRectRef.current?.height || 56}px` }}
                 className="w-full rounded-2xl bg-white/[0.04] border border-dashed border-white/20 transition-all duration-200"
               />
@@ -326,23 +367,15 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
           return (
             <div
               key={task.id}
-              onPointerDown={(e) => {
-                const idx = tasks.findIndex((t) => t.id === task.id);
-                handleItemPointerDown(e, task, idx);
-              }}
-              onPointerMove={handleItemPointerMove}
-              onPointerUp={handleItemPointerUp}
-              onPointerCancel={handleItemPointerUp}
-              className={`relative rounded-2xl transition-all duration-200 touch-pan-y ${
-                isHoldingThis
-                  ? 'scale-[1.02] shadow-xl bg-[#1E1722] ring-1 ring-white/20'
-                  : 'hover:bg-white/[0.02]'
-              }`}
+              data-task-id={task.id}
+              onPointerDown={(e) => handleItemPointerDown(e, task)}
+              className="relative rounded-2xl hover:bg-white/[0.02] transition-all duration-200"
             >
               <TaskCompactRow
                 task={task}
+                showDragHandle={isCustomSort}
                 onClickTask={(t) => {
-                  if (!holdingTaskId && !draggedTaskId) {
+                  if (!draggedTaskId) {
                     onClickTask(t);
                   }
                 }}
@@ -352,7 +385,7 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
         })}
       </div>
 
-      {/* Floating Card active during drag */}
+      {/* Floating Card rendering during drag */}
       {draggedTask && cardRectRef.current && (
         <div
           style={{
@@ -367,7 +400,7 @@ export const CustomReorderList: React.FC<CustomReorderListProps> = ({
           className="scale-[1.03] shadow-2xl bg-[#1F1822] border border-white/20 rounded-2xl opacity-95 flex items-center px-4"
         >
           <div className="w-full pointer-events-none">
-            <TaskCompactRow task={draggedTask} onClickTask={() => {}} />
+            <TaskCompactRow task={draggedTask} showDragHandle={true} onClickTask={() => {}} />
           </div>
         </div>
       )}

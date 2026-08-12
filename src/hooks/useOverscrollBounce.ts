@@ -42,6 +42,23 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
+
+      let target = e.target as HTMLElement | null;
+      while (target && target !== el) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          tag === 'LABEL' ||
+          tag === 'BUTTON' ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+        target = target.parentElement;
+      }
+
       startY = e.touches[0].clientY;
       startX = e.touches[0].clientX;
       mode = null;
@@ -61,9 +78,21 @@ export function useOverscrollBounce<T extends HTMLElement = HTMLDivElement>({
         return;
       }
 
-      // Ignore if touch target is inside a scrollable child element (nested scroll container)
+      // Ignore form controls & inputs so software keyboard focus is never blocked
       let target = e.target as HTMLElement | null;
       while (target && target !== el) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          tag === 'LABEL' ||
+          tag === 'BUTTON' ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+
         const style = window.getComputedStyle(target);
         if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
           if (target.scrollHeight > target.clientHeight) {

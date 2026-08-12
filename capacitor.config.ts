@@ -1,4 +1,9 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+interface CapacitorConfig {
+  appId: string;
+  appName: string;
+  webDir: string;
+  [key: string]: unknown;
+}
 
 const config: CapacitorConfig = {
   appId: 'com.lisburn.app',
@@ -7,3 +12,4 @@ const config: CapacitorConfig = {
 };
 
 export default config;
+

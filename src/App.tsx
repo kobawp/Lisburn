@@ -5,25 +5,33 @@ import {
   AppSettings, 
   SortOption 
 } from './types';
-import { 
-  loadTasksFromStorage, 
-  saveTasksToStorage, 
-  loadSettingsFromStorage, 
-  saveSettingsToStorage, 
-  resetTasksToDefault 
-} from './utils/storage';
+import { registerServiceWorker, requestNotificationPermission } from './utils/notifications';
 import { TaskCompactRow } from './components/TaskCompactRow';
 import { CustomReorderList } from './components/CustomReorderList';
 import { AddTaskModal } from './components/AddTaskModal';
 import { EditTaskModal } from './components/EditTaskModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { SettingsModal } from './components/SettingsModal';
-import { ArrowUpDown, Search, Clock, Plus, Settings, X } from 'lucide-react';
+import { ArrowUpDown, Search, Clock, Plus, Settings, X, Cloud } from 'lucide-react';
 import { useOverscrollBounce } from './hooks/useOverscrollBounce';
+import { useFirebaseSync } from './hooks/useFirebaseSync';
+import { useiOSKeyboardFix } from './hooks/useiOSKeyboardFix';
 
 export default function App() {
-  const [tasks, setTasks] = useState<Task[]>(() => loadTasksFromStorage());
-  const [settings, setSettings] = useState<AppSettings>(() => loadSettingsFromStorage());
+  useiOSKeyboardFix();
+
+  const {
+    user,
+    tasks,
+    settings,
+    syncStatus,
+    saveTask,
+    deleteTask,
+    saveSettings,
+    reorderTasks,
+    handleGoogleSignIn,
+    handleSignOut
+  } = useFirebaseSync();
   
   // Search & Sort state
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,6 +40,27 @@ export default function App() {
   const searchBarRef = useRef<HTMLDivElement>(null);
 
   const { containerRef: mainRef } = useOverscrollBounce<HTMLDivElement>();
+
+  // Register service worker and handle initial notification permission on app launch
+  useEffect(() => {
+    registerServiceWorker();
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted' && !settings.allowNotifications) {
+        saveSettings({ ...settings, allowNotifications: true });
+      } else if (Notification.permission === 'default') {
+        const hasPrompted = localStorage.getItem('lisburn_notifications_prompted');
+        if (!hasPrompted) {
+          localStorage.setItem('lisburn_notifications_prompted', 'true');
+          requestNotificationPermission().then((permission) => {
+            if (permission === 'granted') {
+              saveSettings({ ...settings, allowNotifications: true });
+            }
+          });
+        }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,9 +81,9 @@ export default function App() {
   const handleSortChange = (newSort: SortOption) => {
     // Autosave current order before switching
     if (!searchQuery.trim()) {
-      setTasks(filteredTasks);
+      reorderTasks(filteredTasks);
     }
-    setSettings((s) => ({ ...s, sortBy: newSort }));
+    saveSettings({ ...settings, sortBy: newSort });
     setIsSortMenuOpen(false);
   };
 
@@ -63,15 +92,6 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
-
-  // Sync to localStorage
-  useEffect(() => {
-    saveTasksToStorage(tasks);
-  }, [tasks]);
-
-  useEffect(() => {
-    saveSettingsToStorage(settings);
-  }, [settings]);
 
   // Keep detailTask in sync if tasks change while detail modal is open
   useEffect(() => {
@@ -98,17 +118,17 @@ export default function App() {
         }
       ] : []
     };
-    setTasks((prev) => [newTask, ...prev]);
+    saveTask(newTask);
   };
 
   // Edit Task
   const handleSaveEditTask = (updatedTask: Task) => {
-    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    saveTask(updatedTask);
   };
 
   // Delete Task
   const handleDeleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    deleteTask(taskId);
     if (detailTask?.id === taskId) {
       setDetailTask(null);
     }
@@ -116,57 +136,51 @@ export default function App() {
 
   // Add Manual History Entry in Task Detail
   const handleAddHistoryEntry = (taskId: string, isoTimestamp: string, note?: string) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const newEntry = {
-            id: 'hist-' + Date.now(),
-            timestamp: isoTimestamp,
-            note: note || ''
-          };
-          const combined = [newEntry, ...t.history].sort(
-            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-          );
-          return {
-            ...t,
-            lastCompletedAt: combined[0].timestamp,
-            history: combined
-          };
-        }
-        return t;
-      })
+    const target = tasks.find((t) => t.id === taskId);
+    if (!target) return;
+
+    const newEntry = {
+      id: 'hist-' + Date.now(),
+      timestamp: isoTimestamp,
+      note: note || ''
+    };
+    const combined = [newEntry, ...target.history].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+    const updatedTask: Task = {
+      ...target,
+      lastCompletedAt: combined[0].timestamp,
+      history: combined
+    };
+    saveTask(updatedTask);
   };
 
   // Delete History Entry
   const handleDeleteHistoryEntry = (taskId: string, entryId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const updatedHistory = t.history.filter((h) => h.id !== entryId);
-          let newLastCompletedAt = t.lastCompletedAt;
-          if (updatedHistory.length > 0) {
-            newLastCompletedAt = updatedHistory[0].timestamp;
-          }
-          return {
-            ...t,
-            lastCompletedAt: newLastCompletedAt,
-            history: updatedHistory
-          };
-        }
-        return t;
-      })
-    );
+    const target = tasks.find((t) => t.id === taskId);
+    if (!target) return;
+
+    const updatedHistory = target.history.filter((h) => h.id !== entryId);
+    let newLastCompletedAt = target.lastCompletedAt;
+    if (updatedHistory.length > 0) {
+      newLastCompletedAt = updatedHistory[0].timestamp;
+    }
+    const updatedTask: Task = {
+      ...target,
+      lastCompletedAt: newLastCompletedAt,
+      history: updatedHistory
+    };
+    saveTask(updatedTask);
   };
 
   // Reset Data to Defaults
   const handleResetTasks = () => {
-    setTasks([]);
+    tasks.forEach((t) => deleteTask(t.id));
   };
 
   // Import Tasks
   const handleImportTasks = (importedTasks: Task[]) => {
-    setTasks(importedTasks);
+    importedTasks.forEach((t) => saveTask(t));
   };
 
   // Filter tasks (sorting is now manual via drag and drop)
@@ -194,10 +208,10 @@ export default function App() {
 
   const isCustomSort = currentSort === 'custom' && !searchQuery.trim();
 
-  const handleReorder = (reorderedTasks: Task[]) => {
+  const handleReorder = (reordered: Task[]) => {
     // Only allow reordering if there is no active search query and sorting is custom
     if (isCustomSort) {
-      setTasks(reorderedTasks);
+      reorderTasks(reordered);
     }
   };
 
@@ -310,7 +324,11 @@ export default function App() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search"
-            className="w-full pl-12 pr-10 py-2.5 bg-[#130F14] rounded-full text-[16px] text-[#2D2A26] text-zinc-100 placeholder-[#777777] focus:outline-none transition-colors"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            enterKeyHint="search"
+            className="w-full pl-12 pr-10 py-2.5 bg-[#130F14] rounded-full text-[16px] text-[#2D2A26] text-zinc-100 placeholder-[#777777] focus:outline-none transition-colors select-text touch-auto"
           />
           {searchQuery && (
             <button
@@ -409,10 +427,14 @@ export default function App() {
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
             settings={settings}
-            onUpdateSettings={(newS) => setSettings((s) => ({ ...s, ...newS }))}
+            onUpdateSettings={(newS) => saveSettings({ ...settings, ...newS })}
             tasks={tasks}
             onResetTasks={handleResetTasks}
             onImportTasks={handleImportTasks}
+            user={user}
+            syncStatus={syncStatus}
+            onGoogleSignIn={handleGoogleSignIn}
+            onSignOut={handleSignOut}
           />
         )}
       </AnimatePresence>

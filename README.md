@@ -4,7 +4,7 @@
 
 # Lisburn App
 
-A mobile-friendly web application for remembering reoccurring tasks! 
+A mobile-friendly web application for remembering recurring tasks! 
 
 <p align="center">
   <a href="https://lisburn.ai.studio/">

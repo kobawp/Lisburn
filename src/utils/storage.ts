@@ -7,7 +7,7 @@ const SETTINGS_STORAGE_KEY = 'days_since_tracker_settings_v1';
 export const DEFAULT_SETTINGS: AppSettings = {
   sortBy: 'custom',
   soundEnabled: true,
-  allowNotifications: true,
+  allowNotifications: false,
   quietHoursEnabled: false,
   quietHoursFrom: '22:00',
   quietHoursTo: '08:00'

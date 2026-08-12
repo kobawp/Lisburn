@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, GripVertical } from 'lucide-react';
 import { Task } from '../types';
 import { TaskIcon } from './TaskIcon';
 import { formatShortTimeSince } from '../utils/timeUtils';
@@ -7,11 +7,13 @@ import { formatShortTimeSince } from '../utils/timeUtils';
 interface TaskCompactRowProps {
   task: Task;
   onClickTask: (task: Task) => void;
+  showDragHandle?: boolean;
 }
 
 export const TaskCompactRow: React.FC<TaskCompactRowProps> = ({
   task,
-  onClickTask
+  onClickTask,
+  showDragHandle = false
 }) => {
   const shortTime = formatShortTimeSince(task.lastCompletedAt);
   const hasNoDate = task.lastCompletedAt === null;
@@ -22,7 +24,17 @@ export const TaskCompactRow: React.FC<TaskCompactRowProps> = ({
       className="py-1.5 flex items-center justify-between gap-3 cursor-pointer group select-none active:opacity-70 transition-opacity"
     >
       {/* Icon + Title */}
-      <div className="flex items-center gap-4 min-w-0 flex-1">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {showDragHandle && (
+          <div 
+            data-drag-handle="true" 
+            onClick={(e) => e.stopPropagation()}
+            className="p-1 -ml-1 text-[#8E8A93] hover:text-white active:text-purple-400 shrink-0 cursor-grab active:cursor-grabbing touch-none flex items-center justify-center"
+            title="Drag to reorder"
+          >
+            <GripVertical className="w-4.5 h-4.5" />
+          </div>
+        )}
         <div className="w-10 h-10 rounded-[12px] bg-[#1D141F] flex items-center justify-center shrink-0">
           <TaskIcon name={task.icon} className="w-5 h-5 text-white" />
         </div>
