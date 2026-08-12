@@ -5,21 +5,17 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    match /users/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-
+    // We use a shared 'syncId' for syncing. 
+    // Any authenticated user can read/write tasks and settings if they know the syncId.
+    
     match /tasks/{taskId} {
-      allow read, write: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, write: if isAuthenticated();
     }
-
-    match /settings/{userId} {
-      allow read, write: if isOwner(userId);
+    match /settings/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
   }
 }

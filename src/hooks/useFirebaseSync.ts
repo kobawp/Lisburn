@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   auth, 
   db, 
-  signInWithGoogle, 
   signInAnon, 
   logOut, 
   onAuthStateChanged, 
@@ -16,6 +15,7 @@ import {
   where 
 } from '../lib/firebase';
 import { Task, AppSettings } from '../types';
+import { getStoredSyncCode } from '../utils/syncCode';
 import { loadTasksFromStorage, saveTasksToStorage, loadSettingsFromStorage, saveSettingsToStorage } from '../utils/storage';
 
 export function useFirebaseSync() {
@@ -24,6 +24,7 @@ export function useFirebaseSync() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasksFromStorage());
   const [settings, setSettings] = useState<AppSettings>(() => loadSettingsFromStorage());
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('synced');
+  const [activeSyncCode, setActiveSyncCode] = useState(() => getStoredSyncCode());
 
   // Listen to auth state
   useEffect(() => {
@@ -57,7 +58,7 @@ export function useFirebaseSync() {
     setSyncStatus('syncing');
 
     // Subscribe to tasks collection for this user
-    const q = query(collection(db, 'tasks'), where('userId', '==', user.uid));
+    const q = query(collection(db, 'tasks'), where('syncId', '==', activeSyncCode));
     const unsubscribeTasks = onSnapshot(
       q,
       (snapshot) => {
@@ -74,16 +75,23 @@ export function useFirebaseSync() {
             reminderIntervalHours: data.reminderIntervalHours ?? null,
             history: Array.isArray(data.history) ? data.history : [],
             createdAt: data.createdAt || new Date().toISOString(),
-            color: data.color || 'violet'
+            color: data.color || 'violet',
+            order: data.order ?? 0
           });
         });
 
         // If cloud is empty but local storage has tasks, upload local tasks to cloud
+        cloudTasks.sort((a, b) => {
+          if ((a.order ?? 0) !== (b.order ?? 0)) {
+            return (a.order ?? 0) - (b.order ?? 0);
+          }
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
         if (cloudTasks.length === 0 && snapshot.empty) {
           const localTasks = loadTasksFromStorage();
           if (localTasks.length > 0) {
             localTasks.forEach((t) => {
-              setDoc(doc(db, 'tasks', t.id), { ...t, userId: user.uid }, { merge: true });
+              setDoc(doc(db, 'tasks', t.id), { ...t, syncId: activeSyncCode }, { merge: true });
             });
             setTasks(localTasks);
           }
@@ -101,7 +109,7 @@ export function useFirebaseSync() {
     );
 
     // Subscribe to settings for this user
-    const settingsDocRef = doc(db, 'settings', user.uid);
+    const settingsDocRef = doc(db, 'settings', activeSyncCode);
     const unsubscribeSettings = onSnapshot(
       settingsDocRef,
       (docSnap) => {
@@ -112,7 +120,7 @@ export function useFirebaseSync() {
         } else {
           // Upload local settings to cloud
           const localSettings = loadSettingsFromStorage();
-          setDoc(settingsDocRef, { ...localSettings, userId: user.uid }, { merge: true });
+          setDoc(settingsDocRef, { ...localSettings, syncId: activeSyncCode }, { merge: true });
         }
       },
       (err) => {
@@ -124,7 +132,7 @@ export function useFirebaseSync() {
       unsubscribeTasks();
       unsubscribeSettings();
     };
-  }, [user]);
+  }, [user, activeSyncCode]);
 
   // Handler functions to update Firestore + local fallback
   const saveTask = useCallback(
@@ -140,7 +148,7 @@ export function useFirebaseSync() {
       if (user) {
         setSyncStatus('syncing');
         try {
-          await setDoc(doc(db, 'tasks', task.id), { ...task, userId: user.uid }, { merge: true });
+          await setDoc(doc(db, 'tasks', task.id), { ...task, syncId: activeSyncCode }, { merge: true });
           setSyncStatus('synced');
         } catch (e) {
           console.error('Failed to save task to Cloud Firestore:', e);
@@ -148,7 +156,7 @@ export function useFirebaseSync() {
         }
       }
     },
-    [user]
+    [user, activeSyncCode]
   );
 
   const deleteTask = useCallback(
@@ -170,7 +178,7 @@ export function useFirebaseSync() {
         }
       }
     },
-    [user]
+    [user, activeSyncCode]
   );
 
   const saveSettings = useCallback(
@@ -180,25 +188,25 @@ export function useFirebaseSync() {
 
       if (user) {
         try {
-          await setDoc(doc(db, 'settings', user.uid), { ...newSettings, userId: user.uid }, { merge: true });
+          await setDoc(doc(db, 'settings', activeSyncCode), { ...newSettings, syncId: activeSyncCode }, { merge: true });
         } catch (e) {
           console.error('Failed to save settings to Cloud Firestore:', e);
         }
       }
     },
-    [user]
+    [user, activeSyncCode]
   );
 
   const reorderTasks = useCallback(
     async (reorderedTasks: Task[]) => {
-      setTasks(reorderedTasks);
-      saveTasksToStorage(reorderedTasks);
-
+      const ordered = reorderedTasks.map((t, i) => ({ ...t, order: i }));
+      setTasks(ordered);
+      saveTasksToStorage(ordered);
       if (user) {
         setSyncStatus('syncing');
         try {
-          const promises = reorderedTasks.map((t) =>
-            setDoc(doc(db, 'tasks', t.id), { ...t, userId: user.uid }, { merge: true })
+          const promises = ordered.map((t) =>
+            setDoc(doc(db, 'tasks', t.id), { ...t, syncId: activeSyncCode }, { merge: true })
           );
           await Promise.all(promises);
           setSyncStatus('synced');
@@ -208,23 +216,18 @@ export function useFirebaseSync() {
         }
       }
     },
-    [user]
+    [user, activeSyncCode]
   );
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setSyncStatus('syncing');
-      const loggedInUser = await signInWithGoogle();
-      setSyncStatus('synced');
-    } catch (e: any) {
-      if (e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request') {
-        console.log('User closed Google Sign-In popup.');
-        setSyncStatus('synced');
-        return;
-      }
-      console.error('Google Sign-In failed:', e);
-      setSyncStatus('error');
-    }
+  
+
+  
+  const updateSyncCode = (newCode: string) => {
+    import('../utils/syncCode').then(({ setStoredSyncCode }) => {
+      setStoredSyncCode(newCode);
+      setActiveSyncCode(newCode.toUpperCase().trim());
+      setTasks([]); // clear local to force pull
+    });
   };
 
   const handleSignOut = async () => {
@@ -247,7 +250,8 @@ export function useFirebaseSync() {
     deleteTask,
     saveSettings,
     reorderTasks,
-    handleGoogleSignIn,
-    handleSignOut
+    handleSignOut,
+    activeSyncCode,
+    updateSyncCode
   };
 }

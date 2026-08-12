@@ -23,6 +23,8 @@ import {
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
+import { isSideloadedApp } from '../utils/env';
+
 const config = {
   apiKey: firebaseConfig.apiKey,
   authDomain: firebaseConfig.authDomain,
@@ -47,15 +49,9 @@ export const googleProvider = new GoogleAuthProvider();
 
 export async function signInWithGoogle() {
   try {
-    const isCapacitor = typeof window !== 'undefined' && ((window as any)?.Capacitor !== undefined || window.location.href.startsWith('capacitor:'));
-    if (isCapacitor) {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      } catch (redirectErr) {
-        console.warn('Redirect sign-in error:', redirectErr);
-        return null;
-      }
+    if (isSideloadedApp()) {
+      alert("Google Sign-In is not supported in this sideloaded app due to native WKWebView constraints. Please use the Web App at lisburn.ai.studio (Add to Home Screen) to sync your data.");
+      return null;
     }
 
     const result = await signInWithPopup(auth, googleProvider);

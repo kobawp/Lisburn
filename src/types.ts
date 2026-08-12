@@ -36,6 +36,7 @@ export interface Task {
   reminderIntervalHours: number | null; // null means no reminder
   history: CompletionEntry[];
   createdAt: string; // ISO String
+  order?: number;
   color?: TaskColor;
 }
 

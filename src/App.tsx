@@ -29,8 +29,9 @@ export default function App() {
     deleteTask,
     saveSettings,
     reorderTasks,
-    handleGoogleSignIn,
-    handleSignOut
+    handleSignOut,
+    activeSyncCode,
+    updateSyncCode
   } = useFirebaseSync();
   
   // Search & Sort state
@@ -116,7 +117,8 @@ export default function App() {
           timestamp: taskData.lastCompletedAt,
           note: 'Task created'
         }
-      ] : []
+      ] : [],
+      order: tasks.length
     };
     saveTask(newTask);
   };
@@ -433,7 +435,8 @@ export default function App() {
             onImportTasks={handleImportTasks}
             user={user}
             syncStatus={syncStatus}
-            onGoogleSignIn={handleGoogleSignIn}
+        activeSyncCode={activeSyncCode}
+        updateSyncCode={updateSyncCode}
             onSignOut={handleSignOut}
           />
         )}
