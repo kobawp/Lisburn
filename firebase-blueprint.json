@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "users": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid"]
+    },
+    "tasks": {
+      "title": "Task",
+      "description": "User task items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "icon": { "type": "string" },
+        "lastCompletedAt": { "type": "string" },
+        "reminderIntervalHours": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "settings": {
+      "title": "AppSettings",
+      "description": "User settings document",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "sortBy": { "type": "string" },
+        "soundEnabled": { "type": "boolean" },
+        "allowNotifications": { "type": "boolean" },
+        "quietHoursEnabled": { "type": "boolean" },
+        "quietHoursFrom": { "type": "string" },
+        "quietHoursTo": { "type": "string" }
+      },
+      "required": ["userId"]
+    }
+  }
+}

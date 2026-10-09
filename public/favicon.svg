@@ -1,0 +1,10 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>
+  <defs>
+    <radialGradient id='tabBg' cx='30%' cy='20%' r='90%'>
+      <stop offset='0%' stop-color='#2E153A'/>
+      <stop offset='100%' stop-color='#0A050D'/>
+    </radialGradient>
+  </defs>
+  <rect width='64' height='64' rx='16' fill='url(#tabBg)'/>
+  <text x='32' y='46' text-anchor='middle' font-family='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' font-weight='900' font-size='44' fill='#FFFFFF' letter-spacing='-1.5px'>L<tspan fill='#AB70D5' font-size='40'>.</tspan></text>
+</svg>

@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // For AI Studio prototype, we allow unauthenticated access 
+    // since WKWebView blocks Google Sign-In and Anonymous Auth is disabled.
+    // The data is scoped by a long random syncId.
+    
+    match /tasks/{taskId} {
+      allow read, write: if true;
+    }
+    
+    match /settings/{docId} {
+      allow read, write: if true;
+    }
+    
+    match /pushSubscriptions/{docId} {
+      allow read, write: if true;
+    }
+    
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

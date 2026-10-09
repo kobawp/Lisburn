@@ -1,0 +1,381 @@
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { X } from 'lucide-react';
+import { Task } from '../types';
+import { TaskIcon } from './TaskIcon';
+import { getTimeBreakdown } from '../utils/timeUtils';
+import { formatLongDateInZone } from '../utils/timezone';
+import { useOverscrollBounce } from '../hooks/useOverscrollBounce';
+
+interface TaskDetailModalProps {
+  task: Task | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
+  onAddHistoryEntry?: (taskId: string, timestamp: string, note: string) => void;
+  onDeleteHistoryEntry?: (taskId: string, entryId: string) => void;
+  onEditHistoryEntry?: (taskId: string, entryId: string, timestamp: string, note: string) => void;
+}
+
+export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
+  task,
+  isOpen,
+  onClose,
+  onEdit,
+  onDelete,
+  onAddHistoryEntry,
+  onDeleteHistoryEntry,
+  onEditHistoryEntry
+}) => {
+  const [isPromptingNote, setIsPromptingNote] = useState(false);
+  const [noteInput, setNoteInput] = useState('');
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
+  const [editHistoryDate, setEditHistoryDate] = useState<string>('');
+  const [editHistoryNote, setEditHistoryNote] = useState<string>('');
+  const [showTaskDeleteConfirm, setShowTaskDeleteConfirm] = useState(false);
+  const { containerRef } = useOverscrollBounce<HTMLDivElement>();
+  
+
+
+  const handleMarkDone = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onAddHistoryEntry) {
+      onAddHistoryEntry(task.id, new Date().toISOString(), noteInput.trim());
+    }
+    setNoteInput('');
+    setIsPromptingNote(false);
+  };
+
+  // Format Date for Display
+  const formatLongDate = (isoString: string | null) => {
+    return formatLongDateInZone(isoString);
+  };
+
+  const getRelativeDaysString = (isoString: string | null) => {
+    if (!isoString) return '';
+    const breakdown = getTimeBreakdown(isoString);
+    if (breakdown.totalDays === 1) return '1 day ago';
+    if (breakdown.totalDays === 0) return 'Today';
+    return `${breakdown.totalDays} days ago`;
+  };
+
+  // Calculate Next Due
+  let nextDueIso: string | null = null;
+  let nextDueStr = '-';
+  let nextDueRelative = '';
+
+  if (task.lastCompletedAt && task.reminderIntervalHours) {
+    const lastDone = new Date(task.lastCompletedAt).getTime();
+    const nextDueMs = lastDone + (task.reminderIntervalHours * 60 * 60 * 1000);
+    const nextDueDate = new Date(nextDueMs);
+    nextDueIso = nextDueDate.toISOString();
+    nextDueStr = formatLongDate(nextDueIso);
+    
+    const now = new Date().getTime();
+    const diffMs = nextDueMs - now;
+    const diffDays = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
+    
+    if (diffMs < 0) {
+      if (diffDays > 0) {
+        nextDueRelative = diffDays === 1 ? '1 day overdue' : `${diffDays} days overdue`;
+      } else if (diffHours > 0) {
+        nextDueRelative = diffHours === 1 ? '1 hour overdue' : `${diffHours} hours overdue`;
+      } else {
+        nextDueRelative = 'due now';
+      }
+    } else {
+      if (diffDays > 0) {
+        nextDueRelative = diffDays === 1 ? 'in 1 day' : `in ${diffDays} days`;
+      } else if (diffHours > 0) {
+        nextDueRelative = diffHours === 1 ? 'in 1 hour' : `in ${diffHours} hours`;
+      } else {
+        nextDueRelative = '< 1 hour';
+      }
+    }
+  } else if (!task.reminderIntervalHours) {
+    nextDueRelative = 'no reminder set';
+  }
+
+  // Sort history newest first
+  const sortedHistory = [...task.history].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="fixed inset-0 z-50 flex flex-col bg-[#09050A] overflow-y-auto h-[var(--vv-height,100dvh)] max-h-[var(--vv-height,100dvh)]"
+    >
+      <div 
+        ref={containerRef}
+        className="w-full max-w-2xl mx-auto flex-1 flex flex-col pt-[54px] pb-[74px] px-4 sm:px-6 relative overflow-y-auto no-scrollbar touch-pan-y overscroll-contain"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-end w-full">
+          <button
+            onClick={onClose}
+            className="p-2 -mr-2 text-white hover:text-[#777777] transition-colors focus:outline-none"
+          >
+            <X className="w-8 h-8 stroke-[3]" />
+          </button>
+        </div>
+        
+        {/* Top Icon & Title */}
+        <div className="flex flex-col items-center mt-3 mb-4 space-y-2">
+          <div className="w-14 h-14 rounded-[16px] bg-[#130F14] flex items-center justify-center text-3xl">
+            <TaskIcon name={task.icon} className="w-7 h-7 text-[#AB70D5]" />
+          </div>
+          <h1 className="text-[2.25rem] leading-none tracking-tight font-bold text-white text-center">
+            {task.title}
+          </h1>
+        </div>
+
+        {/* Mark Done Button / Prompt */}
+        <div className="mb-5 w-full max-w-md mx-auto">
+          {!isPromptingNote ? (
+            <button
+              onClick={() => setIsPromptingNote(true)}
+              className="w-full py-3.5 px-6 rounded-full font-bold text-base text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors shadow-lg"
+            >
+              Mark done today?
+            </button>
+          ) : (
+            <motion.form initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }} onSubmit={handleMarkDone} className="flex flex-col gap-3">
+              <textarea
+                autoFocus
+                placeholder="Add a reference (optional)..."
+                value={noteInput}
+                onChange={(e) => setNoteInput(e.target.value)}
+                rows={3}
+                className="w-full px-5 py-3.5 bg-[#130F14] rounded-[24px] text-white text-[16px] focus:outline-none border border-[#d7ae4c]/30 focus:border-[#d7ae4c] resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPromptingNote(false)}
+                  className="flex-1 py-2.5 px-6 rounded-full font-bold text-white bg-[#1C151E] hover:bg-[#261C29] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 px-6 rounded-full font-bold text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.form>
+          )}
+        </div>
+
+        {/* Details Section */}
+        <div className="w-full space-y-4">
+          
+          {/* Description */}
+          {task.description && (
+            <div>
+              <h3 className="text-[14px] font-bold text-[#777777] mb-2 px-1">Description</h3>
+              <div className="bg-[#130F14] rounded-[24px] px-5 py-4">
+                <p className="text-[14px] font-normal text-white whitespace-pre-wrap leading-relaxed">
+                  {task.description}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Dates */}
+          <div className="bg-[#130F14] rounded-[24px] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4">
+              <span className="text-[14px] font-normal text-white">Last done</span>
+              <div className="text-right">
+                <div className="text-[14px] font-normal text-white">{formatLongDate(task.lastCompletedAt)}</div>
+                <div className="text-[11px] text-[#727272]">{getRelativeDaysString(task.lastCompletedAt)}</div>
+              </div>
+            </div>
+            
+            <div className="h-px w-[calc(100%-2.5rem)] ml-5 bg-[#261C29]"></div>
+            
+            <div className="flex items-center justify-between px-5 py-4">
+              <span className="text-[14px] font-normal text-white">Next due</span>
+              <div className="text-right">
+                <div className="text-[14px] font-normal text-white">{nextDueStr}</div>
+                <div className="text-[11px] text-[#727272]">{nextDueRelative}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* History */}
+          <div>
+            <div className="flex items-center justify-between border-b border-[#261C29] pb-2 mb-2 px-1">
+              <h3 className="text-[14px] font-bold text-[#777777]">History</h3>
+              <h3 className="text-[14px] font-bold text-[#777777]">Reference</h3>
+            </div>
+            <div 
+              className="pt-2 pb-6 space-y-3 px-1 max-h-64 overflow-y-auto no-scrollbar touch-pan-y"
+              style={
+                sortedHistory.length > 3
+                  ? {
+                      WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%)',
+                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%)'
+                    }
+                  : undefined
+              }
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
+              {sortedHistory.length === 0 ? (
+                <p className="text-[14px] text-[#777777] italic">No history entries yet.</p>
+              ) : (
+                sortedHistory.map((entry) => (
+                  <div key={entry.id}>
+                    {editingHistoryId === entry.id ? (
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (!onEditHistoryEntry) return;
+                          const originalEntry = task.history.find(h => h.id === entry.id);
+                          if (!originalEntry) return;
+                          const oldDate = new Date(originalEntry.timestamp);
+                          const [year, month, day] = editHistoryDate.split('-').map(Number);
+                          const newDate = new Date(year, month - 1, day, oldDate.getHours(), oldDate.getMinutes(), oldDate.getSeconds());
+                          onEditHistoryEntry(task.id, entry.id, newDate.toISOString(), editHistoryNote);
+                          setEditingHistoryId(null);
+                        }} 
+                        className="bg-[#1C151E] p-3 rounded-xl space-y-3 border border-[#261C29]"
+                      >
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <label className="block text-[11px] font-semibold text-[#777777] uppercase tracking-wider mb-1.5">Date</label>
+                            <input
+                              type="date"
+                              required
+                              value={editHistoryDate}
+                              onChange={(e) => setEditHistoryDate(e.target.value)}
+                              className="w-full bg-[#130F14] border border-[#261C29] rounded-lg px-3 py-2 text-white text-base focus:outline-none focus:border-[#d7ae4c]"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#777777] uppercase tracking-wider mb-1.5">Reference</label>
+                          <textarea
+                            value={editHistoryNote}
+                            onChange={(e) => setEditHistoryNote(e.target.value)}
+                            rows={2}
+                            placeholder="Add a reference..."
+                            className="w-full bg-[#130F14] border border-[#261C29] rounded-lg px-3 py-2 text-white text-base focus:outline-none focus:border-[#d7ae4c] resize-none"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onDeleteHistoryEntry) {
+                                onDeleteHistoryEntry(task.id, entry.id);
+                              }
+                              setEditingHistoryId(null);
+                            }}
+                            className="text-[13px] font-bold text-[#B91C1C] hover:text-[#9F1818] transition-colors px-2 py-1"
+                          >
+                            Delete
+                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingHistoryId(null)}
+                              className="px-4 py-1.5 rounded-full text-[13px] font-bold text-white bg-transparent hover:bg-white/10 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-4 py-1.5 rounded-full text-[13px] font-bold text-black bg-[#d7ae4c] hover:bg-[#c49b3c] transition-colors"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    ) : (
+                      <div 
+                        className="flex items-start justify-between gap-4 text-[14px] cursor-pointer hover:bg-white/5 p-1.5 -mx-1.5 rounded-lg transition-colors group"
+                        onClick={() => {
+                          setEditingHistoryId(entry.id);
+                          const dateObj = new Date(entry.timestamp);
+                          setEditHistoryDate(dateObj.toISOString().slice(0, 10));
+                          setEditHistoryNote(entry.note || '');
+                        }}
+                      >
+                        <div className="font-bold text-[#d7ae4c] shrink-0 group-hover:text-[#c49b3c] transition-colors">
+                          • {formatLongDate(entry.timestamp)}
+                        </div>
+                        {entry.note && (
+                          <div className="text-[#d7ae4c] font-normal text-right break-words group-hover:text-[#c49b3c] transition-colors">
+                            {entry.note}
+                          </div>
+                        )}
+                        {!entry.note && (
+                          <div className="text-[#d7ae4c]/40 italic text-right break-words text-[12px] opacity-0 group-hover:opacity-100 transition-opacity">
+                            Add reference...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer Actions */}
+        <div className="mt-14 mb-10 px-2 pt-6 border-t border-[#1C151E]">
+          {showTaskDeleteConfirm ? (
+            <div className="flex items-center justify-between w-full bg-[#1C151E] p-3 rounded-xl border border-[#B91C1C]/30">
+              <span className="text-[13px] font-medium text-white px-2">Delete task?</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowTaskDeleteConfirm(false)}
+                  className="px-3 py-1.5 rounded-lg text-[13px] font-bold text-white hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(task.id);
+                    onClose();
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-[13px] font-bold text-white bg-[#B91C1C] hover:bg-[#9F1818] transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => {
+                  onClose();
+                  onEdit(task);
+                }}
+                className="text-[14px] font-bold text-white hover:text-gray-300 transition-colors px-2 py-1"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setShowTaskDeleteConfirm(true)}
+                className="text-[14px] font-bold text-[#B91C1C] hover:text-[#9F1818] transition-colors px-2 py-1"
+              >
+                Delete Task
+              </button>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </motion.div>
+  );
+};

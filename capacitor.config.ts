@@ -1,0 +1,15 @@
+interface CapacitorConfig {
+  appId: string;
+  appName: string;
+  webDir: string;
+  [key: string]: unknown;
+}
+
+const config: CapacitorConfig = {
+  appId: 'com.lisburn.app',
+  appName: 'Lisburn',
+  webDir: 'dist'
+};
+
+export default config;
+
